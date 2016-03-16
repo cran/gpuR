@@ -2,7 +2,7 @@ library(gpuR)
 context("CPU vclMatrix algebra")
 
 # set option to use CPU instead of GPU
-options(gpuR.default.device = "cpu")
+options(gpuR.default.device.type = "cpu")
 
 # set seed
 set.seed(123)
@@ -17,7 +17,7 @@ B <- matrix(rnorm(ORDER^2), nrow=ORDER, ncol=ORDER)
 E <- matrix(rnorm(15), nrow=5)
 
 
-test_that("vclMatrix Single Precision Matrix multiplication successful", {
+test_that("CPU vclMatrix Single Precision Matrix multiplication successful", {
     has_cpu_skip()
     
     C <- A %*% B
@@ -32,7 +32,7 @@ test_that("vclMatrix Single Precision Matrix multiplication successful", {
                  info="float matrix elements not equivalent")  
 })
 
-test_that("vclMatrix Double Precision Matrix multiplication successful", {
+test_that("CPU vclMatrix Double Precision Matrix multiplication successful", {
     has_cpu_skip()
     
     C <- A %*% B
@@ -47,7 +47,7 @@ test_that("vclMatrix Double Precision Matrix multiplication successful", {
                  info="double matrix elements not equivalent")  
 })
 
-test_that("vclMatrix Single Precision Matrix Subtraction successful", {
+test_that("CPU vclMatrix Single Precision Matrix Subtraction successful", {
     has_cpu_skip()
     
     C <- A - B
@@ -62,7 +62,7 @@ test_that("vclMatrix Single Precision Matrix Subtraction successful", {
                  info="float matrix elements not equivalent")  
 })
 
-test_that("vclMatrix Single Precision Matrix Addition successful", {
+test_that("CPU vclMatrix Single Precision Matrix Addition successful", {
     has_cpu_skip()
     
     C <- A + B
@@ -77,7 +77,7 @@ test_that("vclMatrix Single Precision Matrix Addition successful", {
                  info="float matrix elements not equivalent")  
 })
 
-test_that("vclMatrix Double Precision Matrix Subtraction successful", {
+test_that("CPU vclMatrix Double Precision Matrix Subtraction successful", {
     has_cpu_skip()
     
     C <- A - B
@@ -92,7 +92,7 @@ test_that("vclMatrix Double Precision Matrix Subtraction successful", {
                  info="double matrix elements not equivalent")  
 })
 
-test_that("vclMatrix Double Precision Matrix Addition successful", {
+test_that("CPU vclMatrix Double Precision Matrix Addition successful", {
     has_cpu_skip()
     
     C <- A + B
@@ -107,7 +107,7 @@ test_that("vclMatrix Double Precision Matrix Addition successful", {
                  info="double matrix elements not equivalent")  
 })
 
-test_that("vclMatrix Single Precision crossprod successful", {
+test_that("CPU vclMatrix Single Precision crossprod successful", {
     has_cpu_skip()
     
     X <- matrix(rnorm(10), nrow=2)
@@ -132,7 +132,7 @@ test_that("vclMatrix Single Precision crossprod successful", {
     expect_error(crossprod(fvclX, fvclZ))
 })
 
-test_that("vclMatrix Double Precision crossprod successful", {
+test_that("CPU vclMatrix Double Precision crossprod successful", {
     has_cpu_skip()
     
     X <- matrix(rnorm(10), nrow=2)
@@ -157,12 +157,12 @@ test_that("vclMatrix Double Precision crossprod successful", {
     expect_error(crossprod(fvclX, fvclZ))
 })
 
-test_that("vclMatrix Single Precision tcrossprod successful", {
+test_that("CPU vclMatrix Single Precision tcrossprod successful", {
     has_cpu_skip()
     
     X <- matrix(rnorm(10), nrow=5)
     Y <- matrix(rnorm(10), nrow=5)
-    Z <- matrix(rnorm(10), nrow=2)
+    Z <- matrix(rnorm(15), nrow=5)
     
     C <- tcrossprod(X,Y)
     Cs <- tcrossprod(X)
@@ -179,15 +179,15 @@ test_that("vclMatrix Single Precision tcrossprod successful", {
                  info="float matrix elements not equivalent")  
     expect_equal(fvclCs[,], Cs, tolerance=1e-07, 
                  info="float matrix elements not equivalent") 
-    expect_error(crossprod(fvclX, fvclZ))
+    expect_error(tcrossprod(fvclX, fvclZ))
 })
 
-test_that("vclMatrix Double Precision tcrossprod successful", {
+test_that("CPU vclMatrix Double Precision tcrossprod successful", {
     has_cpu_skip()
     
     X <- matrix(rnorm(10), nrow=2)
     Y <- matrix(rnorm(10), nrow=2)
-    Z <- matrix(rnorm(10), nrow=5)
+    Z <- matrix(rnorm(12), nrow=2)
     
     C <- tcrossprod(X,Y)
     Cs <- tcrossprod(X)
@@ -204,10 +204,10 @@ test_that("vclMatrix Double Precision tcrossprod successful", {
                  info="double matrix elements not equivalent")  
     expect_equal(fvclCs[,], Cs, tolerance=.Machine$double.eps ^ 0.5, 
                  info="double matrix elements not equivalent") 
-    expect_error(crossprod(fvclX, fvclZ))
+    expect_error(tcrossprod(fvclX, fvclZ))
 })
 
-test_that("vclMatrix Single Precision Matrix Element-Wise Multiplication", {
+test_that("CPU vclMatrix Single Precision Matrix Element-Wise Multiplication", {
     has_cpu_skip()
     
     C <- A * B
@@ -224,7 +224,7 @@ test_that("vclMatrix Single Precision Matrix Element-Wise Multiplication", {
     expect_error(fvclA * fvclE)
 })
 
-test_that("vclMatrix Single Precision Matrix Element-Wise Division", {
+test_that("CPU vclMatrix Single Precision Matrix Element-Wise Division", {
     has_cpu_skip()
     
     C <- A / B
@@ -241,7 +241,7 @@ test_that("vclMatrix Single Precision Matrix Element-Wise Division", {
     expect_error(fvclA * fvclE)
 })
 
-test_that("vclMatrix Double Precision Matrix Element-Wise Multiplication", {
+test_that("CPU vclMatrix Double Precision Matrix Element-Wise Multiplication", {
     has_cpu_skip()
     
     C <- A * B
@@ -258,7 +258,7 @@ test_that("vclMatrix Double Precision Matrix Element-Wise Multiplication", {
     expect_error(dvclA * dvclE)
 })
 
-test_that("vclMatrix Double Precision Matrix Element-Wise Division", {
+test_that("CPU vclMatrix Double Precision Matrix Element-Wise Division", {
     has_cpu_skip()
     
     C <- A / B
@@ -275,10 +275,36 @@ test_that("vclMatrix Double Precision Matrix Element-Wise Division", {
     expect_error(dvclA * dvclE)
 })
 
+test_that("CPU vclMatrix Single Precision transpose", {
+    
+    has_cpu_skip()
+    
+    At <- t(A)
+    
+    fgpuA <- vclMatrix(A, type="float")
+    fgpuAt <- t(fgpuA)
+    
+    expect_is(fgpuAt, "fvclMatrix")
+    expect_equal(fgpuAt[,], At, tolerance=1e-07, 
+                 info="transposed float matrix elements not equivalent") 
+})
+
+test_that("CPU vclMatrix Double Precision transpose", {
+    
+    has_cpu_skip()
+    
+    At <- t(A)
+    
+    fgpuA <- vclMatrix(A, type="double")
+    fgpuAt <- t(fgpuA)
+    
+    expect_is(fgpuAt, "dvclMatrix")
+    expect_equal(fgpuAt[,], At, tolerance=.Machine$double.eps^0.5, 
+                 info="transposed double matrix elements not equivalent") 
+})
 
 
-
-# test_that("vclMatrix Integer Matrix multiplication successful", {
+# test_that("CPU vclMatrix Integer Matrix multiplication successful", {
 #     
 #     has_gpu_skip()
 #     
@@ -293,7 +319,7 @@ test_that("vclMatrix Double Precision Matrix Element-Wise Division", {
 #                       info="float matrix elements not equivalent")      
 # })
 # 
-# test_that("vclMatrix Integer Matrix Subtraction successful", {
+# test_that("CPU vclMatrix Integer Matrix Subtraction successful", {
 #     
 #     has_gpu_skip()
 #     
@@ -309,7 +335,7 @@ test_that("vclMatrix Double Precision Matrix Element-Wise Division", {
 #                  info="integer matrix elements not equivalent")  
 # })
 # 
-# test_that("vclMatrix Integer Matrix Addition successful", {
+# test_that("CPU vclMatrix Integer Matrix Addition successful", {
 #     
 #     has_gpu_skip()
 #     
@@ -325,4 +351,4 @@ test_that("vclMatrix Double Precision Matrix Element-Wise Division", {
 #                  info="integer matrix elements not equivalent")  
 # })
 
-options(gpuR.default.device = "gpu")
+options(gpuR.default.device.type = "gpu")

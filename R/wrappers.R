@@ -9,6 +9,102 @@
 
 #' @importFrom Rcpp evalCpp
 
+
+# GPU axpy wrapper
+gpu_Mat_axpy <- function(alpha, A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    nrA = nrow(A)
+    ncA = ncol(A)
+    nrB = nrow(B)
+    ncB = ncol(B)
+    
+    pkg_path <- find.package("gpuR", .libPaths())
+    file <- file.path(pkg_path, "CL", "basic_axpy.cl")
+    
+    if(!file_test("-f", file)){
+        stop("kernel file does not exist")
+    }
+    kernel <- readChar(file, file.info(file)$size)
+    
+    type <- typeof(A)
+    
+    Z <- gpuMatrix(nrow=nrB, ncol=ncA, type=type)
+    if(!missing(B))
+    {
+        if(length(B[]) != length(A[])) stop("Lengths of matrices must match")
+        Z <- deepcopy(B)
+    }
+    
+    switch(type,
+           integer = {cpp_gpuMatrix_iaxpy(alpha, 
+                                          A@address,
+                                          Z@address, 
+                                          kernel,
+                                          device_flag)
+           },
+           float = {cpp_gpuMatrix_axpy(alpha, 
+                                       A@address, 
+                                       Z@address, 
+                                       device_flag,
+                                       6L)
+           },
+           double = {cpp_gpuMatrix_axpy(alpha, 
+                                        A@address,
+                                        Z@address,
+                                        device_flag,
+                                        8L)
+           },
+           stop("type not recognized")
+    )
+    
+    return(Z)
+}
+
+# GPU axpy wrapper
+gpuMatrix_unary_axpy <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type = typeof(A)
+    
+    Z <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               cpp_gpuMatrix_unary_axpy(Z@address, 
+                                        device_flag,
+                                        4L)
+           },
+           float = {
+               cpp_gpuMatrix_unary_axpy(Z@address, 
+                                       device_flag,
+                                       6L)
+           },
+           double = {
+               cpp_gpuMatrix_unary_axpy(Z@address,
+                                        device_flag,
+                                        8L)
+           },
+           stop("type not recognized")
+    )
+    
+    return(Z)
+}
+
 # GPU Matrix Multiplication
 gpu_Mat_mult <- function(A, B){
     
@@ -21,7 +117,7 @@ gpu_Mat_mult <- function(A, B){
     kernel <- readChar(file, file.info(file)$size)
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -32,12 +128,15 @@ gpu_Mat_mult <- function(A, B){
     
     C <- gpuMatrix(nrow=nrow(A), ncol=ncol(B), type=type)
     
+#     print(C[])
+    
     switch(type,
            integer = {
                cpp_gpuMatrix_igemm(A@address,
                                    B@address, 
                                    C@address,
-                                   kernel)
+                                   kernel,
+                                   device_flag)
                #                      cpp_vienna_gpuMatrix_igemm(A@address,
                #                                                        B@address,
                #                                                        C@address)
@@ -69,7 +168,7 @@ return(C)
 gpuMatElemMult <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -110,11 +209,49 @@ gpuMatElemMult <- function(A, B){
 return(C)
 }
 
+# GPU Scalar Element-Wise Multiplication
+gpuMatScalarMult <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_gpuMatrix_scalar_prod(C@address,
+                                              B,
+                                              device_flag,
+                                              6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_gpuMatrix_scalar_prod(C@address,
+                                               B,
+                                               device_flag,
+                                               8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
 # GPU Element-Wise Division
 gpuMatElemDiv <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -149,17 +286,138 @@ gpuMatElemDiv <- function(A, B){
                                             8L)
                }
            },
-{
-    stop("type not recognized")
-})
-return(C)
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Scalar Element-Wise Division
+gpuMatScalarDiv <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_gpuMatrix_scalar_div(C@address,
+                                             B,
+                                             device_flag,
+                                             6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_gpuMatrix_scalar_div(C@address,
+                                              B,
+                                              device_flag,
+                                              8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Element-Wise Power
+gpuMatElemPow <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    if(!all(dim(A) == dim(B))){
+        stop("matrices not conformable")
+    }
+    
+    type <- typeof(A)
+    
+    C <- gpuMatrix(nrow=nrow(A), ncol=ncol(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_gpuMatrix_elem_pow(A@address,
+                                           B@address,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_gpuMatrix_elem_pow(A@address,
+                                            B@address,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Element-Wise Power
+gpuMatScalarPow <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- gpuMatrix(nrow=nrow(A), ncol=ncol(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_gpuMatrix_scalar_pow(A@address,
+                                           B,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_gpuMatrix_scalar_pow(A@address,
+                                            B,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
 }
 
 # GPU Element-Wise Sine
 gpuMatElemSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -198,7 +456,7 @@ return(C)
 gpuMatElemArcSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -237,7 +495,7 @@ return(C)
 gpuMatElemHypSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -276,7 +534,7 @@ return(C)
 gpuMatElemCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -315,7 +573,7 @@ return(C)
 gpuMatElemArcCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -354,7 +612,7 @@ return(C)
 gpuMatElemHypCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -393,7 +651,7 @@ return(C)
 gpuMatElemTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -432,7 +690,7 @@ return(C)
 gpuMatElemArcTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -471,7 +729,7 @@ return(C)
 gpuMatElemHypTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -510,7 +768,7 @@ return(C)
 gpuMatElemLog <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -539,10 +797,10 @@ gpuMatElemLog <- function(A){
                                             8L)
                }
            },
-{
-    stop("type not recognized")
-})
-return(C)
+           
+           stop("type not recognized")
+    )
+    return(C)
 }
 
 
@@ -550,7 +808,7 @@ return(C)
 gpuMatElemLogBase <- function(A, base){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -591,7 +849,7 @@ return(C)
 gpuMatElemLog10 <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -630,7 +888,7 @@ return(C)
 gpuMatElemExp <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -665,70 +923,11 @@ gpuMatElemExp <- function(A){
 return(C)
 }
 
-# GPU axpy wrapper
-gpu_Mat_axpy <- function(alpha, A, B){
-    
-    device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
-               "cpu" = 1, 
-               "gpu" = 0,
-               stop("unrecognized default device option"
-               )
-        )
-    
-    nrA = nrow(A)
-    ncA = ncol(A)
-    nrB = nrow(B)
-    ncB = ncol(B)
-    
-    pkg_path <- find.package("gpuR", .libPaths())
-    file <- file.path(pkg_path, "CL", "basic_axpy.cl")
-    
-    if(!file_test("-f", file)){
-        stop("kernel file does not exist")
-    }
-    kernel <- readChar(file, file.info(file)$size)
-    
-    type <- typeof(A)
-    
-    Z <- gpuMatrix(nrow=nrB, ncol=ncA, type=type)
-    if(!missing(B))
-    {
-        if(length(B[]) != length(A[])) stop("Lengths of matrices must match")
-        Z@address <- B@address
-    }
-    
-    switch(type,
-           integer = {cpp_gpuMatrix_iaxpy(alpha, 
-                                          A@address,
-                                          Z@address, 
-                                          kernel)
-           },
-           float = {cpp_gpuMatrix_axpy(alpha, 
-                                       A@address, 
-                                       Z@address, 
-                                       device_flag,
-                                       6L)
-           },
-           double = {cpp_gpuMatrix_axpy(alpha, 
-                                        A@address,
-                                        Z@address,
-                                        device_flag,
-                                        8L)
-           },
-{
-    stop("type not recognized")
-}
-    )
-
-return(Z)
-}
-
 # GPU colSums
 gpu_colSums <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -767,7 +966,7 @@ gpu_colSums <- function(A){
 gpu_rowSums <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -808,7 +1007,7 @@ gpu_rowSums <- function(A){
 gpu_colMeans <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -842,7 +1041,7 @@ gpu_colMeans <- function(A){
 gpu_rowMeans <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -876,7 +1075,7 @@ gpu_rowMeans <- function(A){
 gpu_pmcc <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -905,12 +1104,12 @@ gpu_pmcc <- function(A){
 # GPU crossprod
 gpu_crossprod <- function(X, Y){
     
-    if(ncol(X) != ncol(Y)){
+    if(nrow(X) != nrow(Y)){
         stop("matrices non-conformable")
     }
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -945,12 +1144,12 @@ gpu_crossprod <- function(X, Y){
 # GPU tcrossprod
 gpu_tcrossprod <- function(X, Y){
     
-    if(nrow(X) != nrow(Y)){
+    if(ncol(X) != ncol(Y)){
         stop("matrices non-conformable")
     }
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -983,11 +1182,11 @@ gpu_tcrossprod <- function(X, Y){
     return(Z)
 }
 
-# GPU Pearson Covariance
-gpuMatrix_euclidean <- function(A, D, diag, upper, p){
+# GPU Euclidean Distance
+gpuMatrix_euclidean <- function(A, D, diag, upper, p, squareDist){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -1000,15 +1199,152 @@ gpuMatrix_euclidean <- function(A, D, diag, upper, p){
            "integer" = stop("integer type not currently implemented"),
            "float" = cpp_gpuMatrix_eucl(A@address, 
                                         D@address, 
+                                        squareDist,
                                         device_flag,
                                         6L),
            "double" = cpp_gpuMatrix_eucl(A@address, 
                                          D@address,
+                                         squareDist,
                                          device_flag,
                                          8L),
            stop("Unsupported matrix type")
     )
     
     invisible(D)
+}
+
+
+# GPU Pairwise Euclidean Distance
+gpuMatrix_peuclidean <- function(A, B, D, squareDist){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(D)
+    
+    switch(type,
+           "integer" = stop("integer type not currently implemented"),
+           "float" = cpp_gpuMatrix_peucl(A@address,
+                                         B@address,
+                                         D@address, 
+                                         squareDist, 
+                                         device_flag,
+                                         6L),
+           "double" = cpp_gpuMatrix_peucl(A@address, 
+                                          B@address,
+                                          D@address,
+                                          squareDist,
+                                          device_flag,
+                                          8L),
+           stop("Unsupported matrix type")
+    )
+    
+    invisible(D)
+}
+
+# GPU Element-Wise Absolute Value
+gpuMatElemAbs <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- gpuMatrix(nrow=nrow(A), ncol=ncol(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_gpuMatrix_elem_abs(A@address,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_gpuMatrix_elem_abs(A@address,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Matrix maximum
+gpuMatrix_max <- function(A){
+    
+    type <- typeof(A)
+    
+    C <- switch(type,
+                integer = {cpp_gpuMatrix_max(A@address, 4L)},
+                float = {cpp_gpuMatrix_max(A@address, 6L)},
+                double = {
+                    if(!deviceHasDouble()){
+                        stop("Selected GPU does not support double precision")
+                    }else{cpp_gpuMatrix_max(A@address, 8L)
+                    }
+                },
+                stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Matrix minimum
+gpuMatrix_min <- function(A){
+    
+    type <- typeof(A)
+    
+    C <- switch(type,
+                integer = {cpp_gpuMatrix_min(A@address, 4L)},
+                float = {cpp_gpuMatrix_min(A@address, 6L)},
+                double = {
+                    if(!deviceHasDouble()){
+                        stop("Selected GPU does not support double precision")
+                    }else{cpp_gpuMatrix_min(A@address, 8L)
+                    }
+                },
+                stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Matrix transpose
+gpuMatrix_t <- function(A){
+    
+    type <- typeof(A)
+    
+    B <- gpuMatrix(0, ncol = nrow(A), nrow = ncol(A), type = type)
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    switch(type,
+           integer = {cpp_gpuMatrix_transpose(A@address, B@address, device_flag, 4L)},
+           float = {cpp_gpuMatrix_transpose(A@address, B@address, device_flag,  6L)},
+           double = {cpp_gpuMatrix_transpose(A@address, B@address, device_flag,  8L)},
+           stop("type not recognized")
+    )
+    
+    return(B)
 }
 

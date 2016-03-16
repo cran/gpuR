@@ -1,14 +1,5 @@
 
-#' @title Extract or Replace Parts of vclMatrix
-#' @param x A vclMatrix object
-#' @param i indices specifying rows
-#' @param j indices specifying columns
-#' @param drop missing
-#' @param value data of similar type to be added to vclMatrix object
-#' @aliases [,vclMatrix
-#' @aliases [<-,vclMatrix
-#' @author Charles Determan Jr.
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[",
           signature(x = "vclMatrix", i = "missing", j = "missing", drop = "missing"),
@@ -20,7 +11,7 @@ setMethod("[",
               )
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[",
           signature(x = "vclMatrix", i = "missing", j = "numeric", drop="missing"),
@@ -33,7 +24,7 @@ setMethod("[",
           })
 
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[",
           signature(x = "vclMatrix", i = "numeric", j = "missing", drop="missing"),
@@ -45,7 +36,7 @@ setMethod("[",
               )
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[",
           signature(x = "vclMatrix", i = "numeric", j = "numeric", drop="missing"),
@@ -57,7 +48,7 @@ setMethod("[",
               )
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[<-",
           signature(x = "vclMatrix", i = "missing", j = "numeric", value = "numeric"),
@@ -78,7 +69,7 @@ setMethod("[<-",
               return(x)
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[<-",
           signature(x = "ivclMatrix", i = "missing", j = "numeric", value = "integer"),
@@ -98,7 +89,7 @@ setMethod("[<-",
               return(x)
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[<-",
           signature(x = "vclMatrix", i = "numeric", j = "missing", value = "numeric"),
@@ -119,7 +110,7 @@ setMethod("[<-",
               return(x)
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[<-",
           signature(x = "ivclMatrix", i = "numeric", j = "missing", value = "integer"),
@@ -140,7 +131,7 @@ setMethod("[<-",
           })
 
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[<-",
           signature(x = "vclMatrix", i = "numeric", j = "numeric", value = "numeric"),
@@ -156,7 +147,7 @@ setMethod("[<-",
               return(x)
           })
 
-#' @rdname extract-vclMatrix
+#' @rdname extract-methods
 #' @export
 setMethod("[<-",
           signature(x = "ivclMatrix", i = "numeric", j = "numeric", value = "integer"),
@@ -171,10 +162,7 @@ setMethod("[<-",
               return(x)
           })
  
-#' @title vclMatrix Multiplication
-#' @param x A vclMatrix object
-#' @param y A vclMatrix object
-#' @return A vclMatrix
+#' @rdname grapes-times-grapes-methods
 #' @export
 setMethod("%*%", signature(x="vclMatrix", y = "vclMatrix"),
           function(x,y)
@@ -187,10 +175,7 @@ setMethod("%*%", signature(x="vclMatrix", y = "vclMatrix"),
           valueClass = "vclMatrix"
 )
 
-#' @title vclMatrix Arith methods
-#' @param e1 A vclMatrix object
-#' @param e2 A vclMatrix object
-#' @return A vclMatrix object
+#' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="vclMatrix", e2="vclMatrix"),
           function(e1, e2)
@@ -201,18 +186,87 @@ setMethod("Arith", c(e1="vclMatrix", e2="vclMatrix"),
                      `-` = vclMat_axpy(-1, e2, e1),
                      `*` = vclMatElemMult(e1, e2),
                      `/` = vclMatElemDiv(e1,e2),
-{
-    stop("undefined operation")
-}
+                     `^` = vclMatElemPow(e1, e2),
+                     stop("undefined operation")
               )
           },
-valueClass = "vclMatrix"
+          valueClass = "vclMatrix"
+)
+
+#' @rdname Arith-methods
+#' @export
+setMethod("Arith", c(e1="vclMatrix", e2="numeric"),
+          function(e1, e2)
+          {
+              assert_is_of_length(e2, 1)
+              
+              op = .Generic[[1]]
+              switch(op,
+                     `+` = {
+                         e2 <- vclMatrix(e2, ncol=ncol(e1), nrow=nrow(e1), type=typeof(e1))
+                         vclMat_axpy(1, e1, e2)
+                     },
+                     `-` = {
+                         e2 <- vclMatrix(e2, ncol=ncol(e1), nrow=nrow(e1), type=typeof(e1))
+                         vclMat_axpy(-1, e2, e1)
+                     },
+                     `*` = vclMatScalarMult(e1, e2),
+                     `/` = vclMatScalarDiv(e1, e2),
+                     `^` = vclMatScalarPow(e1, e2),
+                     stop("undefined operation")
+              )
+          },
+          valueClass = "vclMatrix"
+)
+
+#' @rdname Arith-methods
+#' @export
+setMethod("Arith", c(e1="numeric", e2="vclMatrix"),
+          function(e1, e2)
+          {
+              assert_is_of_length(e1, 1)
+              
+              op = .Generic[[1]]
+              switch(op,
+                     `+` = {
+                         e1 = vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2))
+                         vclMat_axpy(1, e1, e2)
+                     },
+                     `-` = {
+                         e1 = vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2))
+                         vclMat_axpy(-1, e2, e1)
+                     },
+                     `*` = vclMatScalarMult(e2, e1),
+                     `/` = {
+                         e1 = vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2))
+                         vclMatElemDiv(e1, e2)
+                     },
+                     `^` = {
+                         e1 <- vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2))
+                         vclMatElemPow(e1, e2)
+                     },
+                     stop("undefined operation")
+              )
+          },
+          valueClass = "vclMatrix"
+)
+
+#' @rdname Arith-methods
+#' @export
+setMethod("Arith", c(e1="vclMatrix", e2="missing"),
+          function(e1, e2)
+          {
+              op = .Generic[[1]]
+              switch(op,
+                     `-` = vclMatrix_unary_axpy(e1),
+                     stop("undefined operation")
+              )
+          },
+          valueClass = "vclMatrix"
 )
 
 
-#' @title vclMatrix Math methods
-#' @param x A vclMatrix object
-#' @return A vclMatrix object
+#' @rdname Math-methods
 #' @export
 setMethod("Math", c(x="vclMatrix"),
           function(x)
@@ -230,18 +284,14 @@ setMethod("Math", c(x="vclMatrix"),
                      `tanh` = vclMatElemHypTan(x),
                      `log10` = vclMatElemLog10(x),
                      `exp` = vclMatElemExp(x),
+                     `abs` = vclMatElemAbs(x),
                      stop("undefined operation")
               )
           },
           valueClass = "vclMatrix"
 )
 
-#' @title vclMatrix Logarithms
-#' @param x A vclMatrix object
-#' @return A vclMatrix object
-#' @param base A positive number (complex not currently supported by OpenCL):
-#' the base with respect to which logarithms are computed.  Defaults to the
-#' natural log.
+#' @rdname log-methods
 #' @export
 setMethod("log", c(x="vclMatrix"),
           function(x, base=NULL)
@@ -259,13 +309,7 @@ setMethod("log", c(x="vclMatrix"),
 
 
 
-#' @title The Number of Rows/Columns of a vclMatrix
-#' @param x A vclMatrix object
-#' @return An integer of length 1
-#' @rdname nrow.vclMatrix
-#' @aliases nrow,vclMatrix
-#' @aliases ncol,vclMatrix
-#' @author Charles Determan Jr.
+#' @rdname nrow-gpuR
 #' @export
 setMethod('nrow', signature(x="vclMatrix"), 
           function(x) {
@@ -277,7 +321,7 @@ setMethod('nrow', signature(x="vclMatrix"),
           }
 )
 
-#' @rdname nrow.vclMatrix
+#' @rdname nrow-gpuR
 #' @export
 setMethod('ncol', signature(x="vclMatrix"),
           function(x) {
@@ -290,11 +334,8 @@ setMethod('ncol', signature(x="vclMatrix"),
 )
 
 
-#' @title vclMatrix dim method
-#' @param x A vclMatrix object
-#' @return A length 2 vector of the number of rows and columns respectively.
-#' @author Charles Determan Jr.
-#' @aliases dim,vclMatrix
+#' @rdname dim-methods
+#' @aliases dim-vclMatrix
 #' @export
 setMethod('dim', signature(x="vclMatrix"),
           function(x) return(c(nrow(x), ncol(x))))
@@ -346,17 +387,7 @@ setMethod("tcrossprod",
               vcl_tcrossprod(x, y)
           })
 
-
-#' @title Covariance (vclMatrix)
-#' @param x A vclMatrix object
-#' @param y Not used
-#' @param use Not used
-#' @param method Character string indicating which covariance to be computed.
-#' @return A \code{vclMatrix} containing the symmetric covariance values.
-#' @author Charles Determan Jr.
-#' @docType methods
-#' @rdname vclMatrix.cov
-#' @aliases cov,vclMatrix
+#' @rdname cov-methods
 #' @export
 setMethod("cov",
           signature(x = "vclMatrix", y = "missing", use = "missing", method = "missing"),
@@ -367,7 +398,7 @@ setMethod("cov",
               return(vclMatrix_pmcc(x))
           })
 
-#' @rdname vclMatrix.cov
+#' @rdname cov-methods
 #' @export
 setMethod("cov",
           signature(x = "vclMatrix", y = "missing", use = "missing", method = "character"),
@@ -425,15 +456,31 @@ setMethod("rowMeans",
           })
 
 
+#' @rdname Summary-methods
+#' @export
+setMethod("Summary", c(x="vclMatrix"),
+          function(x, ..., na.rm)
+          {              
+              op = .Generic
+              result <- switch(op,
+                               `max` = vclMatMax(x),
+                               `min` = vclMatMin(x),
+                               stop("undefined operation")
+              )
+              return(result)
+          }
+)
+
 #' @title GPU Distance Matrix Computations
 #' @description This function computes and returns the distance matrix 
 #' computed by using the specified distance measure to compute the distances 
 #' between the rows of a data matrix.
 #' @param x A gpuMatrix or vclMatrix object
-#' @param method the distance measure to be used. Only "euclidean" currently
-#' implemented
+#' @param y A gpuMatrix or vclMatrix object
+#' @param method the distance measure to be used. This must be one of
+#' "euclidean" or "sqEuclidean".
 #' @param diag logical value indicating whether the diagonal of the distance 
-#' matrix
+#' matrix should be printed
 #' @param upper logical value indicating whether the upper triangle of the 
 #' distance matrix
 #' @param p The power of the Minkowski distance (not currently used)
@@ -445,7 +492,7 @@ setMethod("dist", signature(x="vclMatrix"),
           function(x, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
           {
               device_flag <- 
-                  switch(options("gpuR.default.device")$gpuR.default.device,
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                          "cpu" = 1, 
                          "gpu" = 0,
                          stop("unrecognized default device option"
@@ -466,10 +513,335 @@ setMethod("dist", signature(x="vclMatrix"),
                          D,
                          diag,
                          upper,
-                         p),
+                         p,
+                         FALSE),
+                     "sqEuclidean" = vclMatrix_euclidean(
+                         x, 
+                         D,
+                         diag,
+                         upper,
+                         p,
+                         TRUE),
                      stop("method not currently supported")
               )
               
              return(D)
+          }
+)
+
+#' @rdname dist-vclMatrix
+#' @aliases distance,vclMatrix
+setMethod("distance", signature(x = "vclMatrix", y = "vclMatrix"),
+          function(x, y, method = "euclidean")
+          {
+              if(identical(x, y)){
+                  same <- TRUE
+                  warning("x is the same as y, did you mean to use 'dist' instead?")
+              }else{
+                  same <- FALSE
+              }
+              
+              if(ncol(x) != ncol(y)){
+                  stop("columns in x and y are not equivalent")
+              }
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              type = typeof(x)
+              
+              if( type == "integer"){
+                  stop("Integer type not currently supported")
+              }
+              
+              D <- vclMatrix(nrow=nrow(x), ncol=nrow(y), type=type)
+              
+              switch(method,
+                     "euclidean" = vclMatrix_peuclidean(
+                         x, 
+                         y,
+                         D,
+                         FALSE),
+                     "sqEuclidean" = vclMatrix_peuclidean(
+                         x, 
+                         y,
+                         D,
+                         TRUE),
+                     stop("method not currently supported")
+              )
+              
+              if(same){
+                  for(i in 1:ncol(D)){
+                      D[i,i] <- 0
+                  }
+              }
+              
+              return(D)
+          }
+)
+
+#' @rdname gpuR-deepcopy
+setMethod("deepcopy", signature(object ="vclMatrix"),
+          function(object){
+              
+              out <- switch(typeof(object),
+                            "integer" = new("ivclMatrix",
+                                            address = cpp_deepcopy_vclMatrix(object@address, 4L)),
+                            "float" = new("fvclMatrix", 
+                                          address = cpp_deepcopy_vclMatrix(object@address, 6L)),
+                            "double" = new("dvclMatrix", 
+                                           address = cpp_deepcopy_vclMatrix(object@address, 8L)),
+                            stop("unrecognized type")
+              )
+              return(out)
+          })
+
+#' @rdname gpuR-block
+setMethod("block",
+          signature(object = "vclMatrix", 
+                    rowStart = "integer", rowEnd = "integer",
+                    colStart = "integer", colEnd = "integer"),
+          function(object, rowStart, rowEnd, colStart, colEnd){
+              
+              assert_all_are_positive(c(rowStart, rowEnd, colStart, colEnd))
+              assert_all_are_in_range(c(rowStart, rowEnd), lower = 1, upper = nrow(object)+1)
+              assert_all_are_in_range(c(colStart, colEnd), lower = 1, upper = ncol(object)+1)
+              
+              ptr <- switch(typeof(object),
+                            "float" = {
+                                address <- cpp_vclMatrix_block(object@address, rowStart-1, rowEnd, colStart-1, colEnd, 6L)
+                                new("fvclMatrixBlock", 
+                                    address = address,
+                                    .context_index = object@.context_index,
+                                    .platform_index = object@.platform_index,
+                                    .platform = object@.platform,
+                                    .device_index = object@.device_index,
+                                    .device = object@.device)
+                            },
+                            "double" = {
+                                address <- cpp_vclMatrix_block(object@address, rowStart-1, rowEnd, colStart-1, colEnd, 8L)
+                                new("dvclMatrixBlock", 
+                                    address = address,
+                                    .context_index = object@.context_index,
+                                    .platform_index = object@.platform_index,
+                                    .platform = object@.platform,
+                                    .device_index = object@.device_index,
+                                    .device = object@.device)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+              
+          })
+
+setMethod("cbind2",
+          signature(x = "vclMatrix", y = "vclMatrix"),
+          function(x, y, ...){
+              if(nrow(x) != nrow(y)){
+                  stop("number of rows of matrices must match")
+              }
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              ptr <- switch(typeof(x),
+                            "integer" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 4L, device_flag)
+                                new("ivclMatrix", address = address)
+                            },
+                            "float" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 6L, device_flag)
+                                new("fvclMatrix", address = address)
+                            },
+                            "double" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 8L, device_flag)
+                                new("dvclMatrix", address = address)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+          })
+
+setMethod("cbind2",
+          signature(x = "numeric", y = "vclMatrix"),
+          function(x, y, ...){
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              x <- vclMatrix(x, nrow=nrow(y), ncol=1, type=typeof(y))
+              
+              ptr <- switch(typeof(x),
+                            "integer" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 4L, device_flag)
+                                new("ivclMatrix", address = address)
+                            },
+                            "float" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 6L, device_flag)
+                                new("fvclMatrix", address = address)
+                            },
+                            "double" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 8L, device_flag)
+                                new("dvclMatrix", address = address)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+          })
+
+setMethod("cbind2",
+          signature(x = "vclMatrix", y = "numeric"),
+          function(x, y, ...){
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              y <- vclMatrix(y, nrow=nrow(x), ncol=1, type=typeof(x))
+              
+              ptr <- switch(typeof(x),
+                            "integer" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 4L, device_flag)
+                                new("ivclMatrix", address = address)
+                            },
+                            "float" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 6L, device_flag)
+                                new("fvclMatrix", address = address)
+                            },
+                            "double" = {
+                                address <- cpp_cbind_vclMatrix(x@address, y@address, 8L, device_flag)
+                                new("dvclMatrix", address = address)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+          })
+
+setMethod("rbind2",
+          signature(x = "vclMatrix", y = "vclMatrix"),
+          function(x, y, ...){
+              if(ncol(x) != ncol(y)){
+                  stop("number of columns of matrices must match")
+              }
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              ptr <- switch(typeof(x),
+                            "integer" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 4L, device_flag)
+                                new("ivclMatrix", address = address)
+                            },
+                            "float" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 6L, device_flag)
+                                new("fvclMatrix", address = address)
+                            },
+                            "double" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 8L, device_flag)
+                                new("dvclMatrix", address = address)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+          })
+
+setMethod("rbind2",
+          signature(x = "numeric", y = "vclMatrix"),
+          function(x, y, ...){
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              x <- vclMatrix(x, nrow=1, ncol=ncol(y), type=typeof(y))
+              
+              ptr <- switch(typeof(x),
+                            "integer" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 4L, device_flag)
+                                new("ivclMatrix", address = address)
+                            },
+                            "float" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 6L, device_flag)
+                                new("fvclMatrix", address = address)
+                            },
+                            "double" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 8L, device_flag)
+                                new("dvclMatrix", address = address)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+          })
+
+setMethod("rbind2",
+          signature(x = "vclMatrix", y = "numeric"),
+          function(x, y, ...){
+              
+              device_flag <- 
+                  switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+                         "cpu" = 1, 
+                         "gpu" = 0,
+                         stop("unrecognized default device option"
+                         )
+                  )
+              
+              y <- vclMatrix(y, nrow=1, ncol=ncol(x), type=typeof(x))
+              
+              ptr <- switch(typeof(x),
+                            "integer" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 4L, device_flag)
+                                new("ivclMatrix", address = address)
+                            },
+                            "float" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 6L, device_flag)
+                                new("fvclMatrix", address = address)
+                            },
+                            "double" = {
+                                address <- cpp_rbind_vclMatrix(x@address, y@address, 8L, device_flag)
+                                new("dvclMatrix", address = address)
+                            },
+                            stop("type not recognized")
+              )
+              
+              return(ptr)
+          })
+
+setMethod("t", c(x = "vclMatrix"),
+          function(x){
+              return(vclMatrix_t(x))
           }
 )

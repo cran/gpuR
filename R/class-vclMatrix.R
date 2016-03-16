@@ -20,6 +20,11 @@
 #'  Common to all vclMatrix objects in the package
 #'  \describe{
 #'      \item{\code{address}:}{Pointer to data matrix}
+#'      \item{\code{.context_index}:}{Integer index of OpenCL contexts}
+#'      \item{\code{.platform_index}:}{Integer index of OpenCL platforms}
+#'      \item{\code{.platform}:}{Name of OpenCL platform}
+#'      \item{\code{.device_index}:}{Integer index of active device}
+#'      \item{\code{.device}:}{Name of active device}
 #'  }
 #' @note R does not contain a native float type.  As such,
 #' the matrix data within a \code{\link{fvclMatrix-class}} 
@@ -36,7 +41,12 @@
 #' \code{\link{dvclMatrix-class}}
 #' @export
 setClass('vclMatrix', 
-         slots = c(address="externalptr"))
+         slots = c(address="externalptr",
+                   .context_index = "integer",
+                   .platform_index = "integer",
+                   .platform = "character",
+                   .device_index = "integer",
+                   .device = "character"))
 
 
 #' @title ivclMatrix Class
@@ -109,3 +119,17 @@ setClass("dvclMatrix",
              }
              TRUE
          })
+
+
+# @export
+setClass("ivclMatrixBlock", 
+         contains = "ivclMatrix")
+
+# @export
+setClass("fvclMatrixBlock", 
+         contains = "fvclMatrix")
+
+# @export
+setClass("dvclMatrixBlock", 
+         contains = "dvclMatrix")
+

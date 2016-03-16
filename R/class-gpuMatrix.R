@@ -17,6 +17,11 @@
 #'  Common to all gpuMatrix objects in the package
 #'  \describe{
 #'      \item{\code{address}:}{Pointer to data matrix}
+#'      \item{\code{.context_index}:}{Integer index of OpenCL contexts}
+#'      \item{\code{.platform_index}:}{Integer index of OpenCL platforms}
+#'      \item{\code{.platform}:}{Name of OpenCL platform}
+#'      \item{\code{.device_index}:}{Integer index of active device}
+#'      \item{\code{.device}:}{Name of active device}
 #'  }
 #' @note R does not contain a native float type.  As such,
 #' the matrix data within a \code{\link{fgpuMatrix-class}} 
@@ -33,7 +38,12 @@
 #' \code{\link{dgpuMatrix-class}}
 #' @export
 setClass('gpuMatrix', 
-         slots = c(address="externalptr"))
+         slots = c(address="externalptr",
+                   .context_index = "integer",
+                   .platform_index = "integer",
+                   .platform = "character",
+                   .device_index = "integer",
+                   .device = "character"))
 
 
 #' @title igpuMatrix Class
@@ -106,6 +116,19 @@ setClass("dgpuMatrix",
              }
              TRUE
          })
+
+
+# @export
+setClass("igpuMatrixBlock", 
+         contains = "igpuMatrix")
+
+# @export
+setClass("fgpuMatrixBlock", 
+         contains = "fgpuMatrix")
+
+# @export
+setClass("dgpuMatrixBlock", 
+         contains = "dgpuMatrix")
 
 # #' @export
 # setClass('gpuMatrix',

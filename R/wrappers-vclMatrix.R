@@ -1,4 +1,247 @@
 
+# vclMatrix numeric vector initializer
+vclMatInitNumVec <- function(data, nrow, ncol, type, device_flag){
+    
+    device <- currentDevice()
+    
+    context_index <- currentContext()
+    device_index <- device$device_index
+    device_type <- device$device_type
+    device_name <- switch(device_type,
+                          "gpu" = gpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          "cpu" = cpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          stop("Unrecognized device type")
+    )
+    platform_index <- currentPlatform()$platform_index
+    platform_name <- platformInfo(platform_index)$platformName
+    
+    if(type == "double" & !deviceHasDouble(platform_index, device_index)){
+        stop("Double precision not supported for current device. 
+                       Try setting 'type = 'float'' or change device if multiple available.")
+    }
+    
+    data = switch(type,
+                  integer = stop("integer matrix must be initialized with an integer (e.g. 3L)"),
+                  float = {
+                      new("fvclMatrix", 
+                          address=vectorToMatVCL(data, 
+                                                 nrow, ncol, 
+                                                 6L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name)
+                  },
+                  double = {
+                      new("dvclMatrix",
+                          address = vectorToMatVCL(data, 
+                                                   nrow, ncol, 
+                                                   8L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name)
+                  },
+                  stop("this is an unrecognized 
+                                 or unimplemented data type")
+    )
+    
+    return(data)
+}
+
+# vclMatrix numeric initializer
+vclMatInitNumScalar <- function(data, nrow, ncol, type, device_flag){
+    
+    device <- currentDevice()
+    
+    context_index <- currentContext()
+    device_index <- device$device_index
+    device_type <- device$device_type
+    device_name <- switch(device_type,
+                          "gpu" = gpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          "cpu" = cpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          stop("Unrecognized device type")
+    )
+    platform_index <- currentPlatform()$platform_index
+    platform_name <- platformInfo(platform_index)$platformName
+    
+    if(type == "double" & !deviceHasDouble(platform_index, device_index)){
+        stop("Double precision not supported for current device. 
+                       Try setting 'type = 'float'' or change device if multiple available.")
+    }
+    
+    data = switch(type,
+                  integer = stop("integer matrix must be initialized with an integer (e.g. 3L)"),
+                  float = {
+                      new("fvclMatrix", 
+                          address=
+                              cpp_scalar_vclMatrix(
+                                  data, 
+                                  nrow, ncol, 
+                                  6L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name
+                      )
+                  },
+                  double = {
+                      new("dvclMatrix",
+                          address = 
+                              cpp_scalar_vclMatrix(
+                                  data, 
+                                  nrow, ncol, 
+                                  8L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name
+                      )
+                  },
+                  stop("this is an unrecognized 
+                                 or unimplemented data type")
+    )
+    
+    return(data)
+}
+
+# vclMatrix integer vector initializer
+vclMatInitIntVec <- function(data, nrow, ncol, type, device_flag){
+    
+    device <- currentDevice()
+    
+    context_index <- currentContext()
+    device_index <- device$device_index
+    device_type <- device$device_type
+    device_name <- switch(device_type,
+                          "gpu" = gpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          "cpu" = cpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          stop("Unrecognized device type")
+    )
+    platform_index <- currentPlatform()$platform_index
+    platform_name <- platformInfo(platform_index)$platformName
+    
+    if(type == "double" & !deviceHasDouble(platform_index, device_index)){
+        stop("Double precision not supported for current device. 
+                       Try setting 'type = 'float'' or change device if multiple available.")
+    }
+    
+    data = switch(type,
+                  integer = {
+                      new("ivclMatrix", 
+                          address=vectorToMatVCL(data, 
+                                                 nrow, ncol,
+                                                 4L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name)
+                  },
+                  float = {
+                      new("fvclMatrix", 
+                          address=vectorToMatVCL(data, 
+                                                 nrow, ncol, 
+                                                 6L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name)
+                  },
+                  double = {
+                      new("dvclMatrix",
+                          address = vectorToMatVCL(data, 
+                                                   nrow, ncol, 
+                                                   8L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name)
+                  },
+                  stop("this is an unrecognized 
+                                     or unimplemented data type")
+    )
+    
+    return(data)
+}
+
+# vclMatrix integer scalar initializer
+vclMatInitIntScalar <- function(data, nrow, ncol, type, device_flag){
+    
+    device <- currentDevice()
+    
+    context_index <- currentContext()
+    device_index <- device$device_index
+    device_type <- device$device_type
+    device_name <- switch(device_type,
+                          "gpu" = gpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          "cpu" = cpuInfo(device_idx = as.integer(device_index))$deviceName,
+                          stop("Unrecognized device type")
+    )
+    platform_index <- currentPlatform()$platform_index
+    platform_name <- platformInfo(platform_index)$platformName
+    
+    if(type == "double" & !deviceHasDouble(platform_index, device_index)){
+        stop("Double precision not supported for current device. 
+                       Try setting 'type = 'float'' or change device if multiple available.")
+    }
+    
+    data = switch(type,
+                  integer = {
+                      new("ivclMatrix", 
+                          address=
+                              cpp_scalar_vclMatrix(
+                                  data, 
+                                  nrow, ncol, 
+                                  4L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name
+                      )
+                  },
+                  float = {
+                      new("fvclMatrix", 
+                          address=
+                              cpp_scalar_vclMatrix(
+                                  data, 
+                                  nrow, ncol, 
+                                  6L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name
+                      )
+                  },
+                  double = {
+                      new("dvclMatrix",
+                          address = 
+                              cpp_scalar_vclMatrix(
+                                  data, 
+                                  nrow, ncol, 
+                                  8L, device_flag),
+                          .context_index = context_index,
+                          .platform_index = platform_index,
+                          .platform = platform_name,
+                          .device_index = device_index,
+                          .device = device_name
+                      )
+                  },
+                  stop("this is an unrecognized 
+                                 or unimplemented data type")
+    )
+    
+    return(data)
+}
+
 # vclMatrix GEMM
 vclMatMult <- function(A, B){
     
@@ -9,16 +252,23 @@ vclMatMult <- function(A, B){
 #         stop("kernel file does not exist")
 #     }
 #     kernel <- readChar(file, file.info(file)$size)
-    
-    device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
-               "cpu" = 1L, 
-               "gpu" = 0L,
-               stop("unrecognized default device option"
-               )
-        )
+#     
+#     device_flag <- 
+#         switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+#                "cpu" = 1L, 
+#                "gpu" = 0L,
+#                stop("unrecognized default device option"
+#                )
+#         )
     
     type <- typeof(A)
+    
+    assert_are_identical(A@.context_index, B@.context_index)
+    
+    oldContext <- currentContext()
+    if(oldContext != A@.context_index){
+        setContext(A@.context_index)
+    }
     
     C <- vclMatrix(nrow=nrow(A), ncol=ncol(B), type=type)
     
@@ -37,7 +287,6 @@ vclMatMult <- function(A, B){
            float = {cpp_vclMatrix_gemm(A@address,
                                        B@address,
                                        C@address,
-                                       device_flag,
                                        6L)
            },
            double = {
@@ -46,21 +295,24 @@ vclMatMult <- function(A, B){
                }else{cpp_vclMatrix_gemm(A@address,
                                         B@address,
                                         C@address,
-                                        device_flag,
                                         8L)
                }
            },
-{
-    stop("type not recognized")
-})
-return(C)
+           stop("type not recognized")
+    )
+    
+    if(oldContext != A@.context_index){
+        setContext(oldContext)
+    }
+    
+    return(C)
 }
 
 # vclMatrix AXPY
 vclMat_axpy <- function(alpha, A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -86,7 +338,7 @@ vclMat_axpy <- function(alpha, A, B){
     if(!missing(B))
     {
         if(length(B[]) != length(A[])) stop("Lengths of matrices must match")
-        Z@address <- B@address
+        Z <- deepcopy(B)
     }
     
     switch(type,
@@ -116,19 +368,63 @@ vclMat_axpy <- function(alpha, A, B){
 return(Z)
 }
 
-# vclMatrix crossprod
-vcl_crossprod <- function(X, Y){
+# vclMatrix unary AXPY
+vclMatrix_unary_axpy <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
-               "cpu" = 1L, 
-               "gpu" = 0L,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
                stop("unrecognized default device option"
                )
         )
     
-    if(ncol(X) != ncol(Y)){
+    type = typeof(A)
+    
+    Z <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               cpp_vclMatrix_unary_axpy(Z@address, 
+                                        device_flag,
+                                        4L)
+           },
+           float = {
+               cpp_vclMatrix_unary_axpy(Z@address, 
+                                        device_flag,
+                                        6L)
+           },
+           double = {
+               cpp_vclMatrix_unary_axpy(Z@address,
+                                        device_flag,
+                                        8L)
+           },
+           stop("type not recognized")
+    )
+    
+    return(Z)
+}
+
+# vclMatrix crossprod
+vcl_crossprod <- function(X, Y){
+    
+#     device_flag <- 
+#         switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+#                "cpu" = 1L, 
+#                "gpu" = 0L,
+#                stop("unrecognized default device option"
+#                )
+#         )
+    
+    if(nrow(X) != nrow(Y)){
         stop("matrices non-conformable")
+    }
+    
+    assert_are_identical(X@.context_index, Y@.context_index)
+    
+    oldContext <- currentContext()
+    if(oldContext != X@.context_index){
+        setContext(X@.context_index)
     }
     
     type <- typeof(X)
@@ -140,14 +436,16 @@ vcl_crossprod <- function(X, Y){
            "float" = cpp_vclMatrix_crossprod(X@address, 
                                              Y@address, 
                                              Z@address,
-                                             device_flag,
                                              6L),
            "double" = cpp_vclMatrix_crossprod(X@address, 
                                               Y@address, 
                                               Z@address,
-                                              device_flag,
                                               8L)
     )
+    
+    if(oldContext != X@.context_index){
+        setContext(oldContext)
+    }
     
     return(Z)
 }
@@ -155,16 +453,23 @@ vcl_crossprod <- function(X, Y){
 # vclMatrix crossprod
 vcl_tcrossprod <- function(X, Y){
     
-    device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
-               "cpu" = 1L, 
-               "gpu" = 0L,
-               stop("unrecognized default device option"
-               )
-        )
+#     device_flag <- 
+#         switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+#                "cpu" = 1L, 
+#                "gpu" = 0L,
+#                stop("unrecognized default device option"
+#                )
+#         )
     
-    if(nrow(X) != nrow(Y)){
+    if(ncol(X) != ncol(Y)){
         stop("matrices non-conformable")
+    }
+    
+    assert_are_identical(X@.context_index, Y@.context_index)
+    
+    oldContext <- currentContext()
+    if(oldContext != X@.context_index){
+        setContext(X@.context_index)
     }
     
     type <- typeof(X)
@@ -176,15 +481,17 @@ vcl_tcrossprod <- function(X, Y){
            "float" = cpp_vclMatrix_tcrossprod(X@address,
                                               Y@address, 
                                               Z@address,
-                                              device_flag,
                                               6L),
            "double" = cpp_vclMatrix_tcrossprod(X@address, 
                                                Y@address, 
                                                Z@address,
-                                               device_flag,
                                                8L),
            stop("type not recognized")
     )
+    
+    if(oldContext != X@.context_index){
+        setContext(oldContext)
+    }
     
     return(Z)
 }
@@ -194,7 +501,7 @@ vcl_tcrossprod <- function(X, Y){
 vclMatElemMult <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -229,17 +536,54 @@ vclMatElemMult <- function(A, B){
                                              8L)
                }
            },
-{
-    stop("type not recognized")
-})
-return(C)
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Scalar Element-Wise Multiplication
+vclMatScalarMult <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclMatrix_scalar_prod(C@address,
+                                              B,
+                                              device_flag,
+                                              6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclMatrix_scalar_prod(C@address,
+                                               B,
+                                               device_flag,
+                                               8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
 }
 
 # GPU Element-Wise Division
 vclMatElemDiv <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -273,19 +617,139 @@ vclMatElemDiv <- function(A, B){
                                             device_flag,
                                             8L)
                }
-           },
-{
-    stop("type not recognized")
-})
-return(C)
+           },           
+           stop("type not recognized")
+    )
+    return(C)
 }
 
+# GPU Scalar Element-Wise Division
+vclMatScalarDiv <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclMatrix_scalar_div(C@address,
+                                             B,
+                                             device_flag,
+                                             6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclMatrix_scalar_div(C@address,
+                                              B,
+                                              device_flag,
+                                              8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Element-Wise Power
+vclMatElemPow <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    if(!all(dim(A) == dim(B))){
+        stop("matrices not conformable")
+    }
+    
+    type <- typeof(A)
+    
+    C <- vclMatrix(nrow=nrow(A), ncol=ncol(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclMatrix_elem_pow(A@address,
+                                           B@address,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclMatrix_elem_pow(A@address,
+                                            B@address,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Element-Wise Power
+vclMatScalarPow <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- vclMatrix(nrow=nrow(A), ncol=ncol(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclMatrix_scalar_pow(A@address,
+                                             B,
+                                             C@address,
+                                             device_flag,
+                                             6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclMatrix_scalar_pow(A@address,
+                                              B,
+                                              C@address,
+                                              device_flag,
+                                              8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
 
 # GPU Element-Wise Sine
 vclMatElemSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -324,7 +788,7 @@ return(C)
 vclMatElemArcSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -363,7 +827,7 @@ return(C)
 vclMatElemHypSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -402,7 +866,7 @@ return(C)
 vclMatElemCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -441,7 +905,7 @@ return(C)
 vclMatElemArcCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -480,7 +944,7 @@ return(C)
 vclMatElemHypCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -519,7 +983,7 @@ return(C)
 vclMatElemTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -558,7 +1022,7 @@ return(C)
 vclMatElemArcTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -597,7 +1061,7 @@ return(C)
 vclMatElemHypTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -636,7 +1100,7 @@ return(C)
 vclMatElemLog <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -675,7 +1139,7 @@ return(C)
 vclMatElemLogBase <- function(A, base){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -716,7 +1180,7 @@ return(C)
 vclMatElemLog10 <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -755,7 +1219,7 @@ return(C)
 vclMatElemExp <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -794,7 +1258,7 @@ return(C)
 vclMatrix_colSums <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -829,7 +1293,7 @@ vclMatrix_colSums <- function(A){
 vclMatrix_rowSums <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -864,7 +1328,7 @@ vclMatrix_rowSums <- function(A){
 vclMatrix_colMeans <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -899,7 +1363,7 @@ vclMatrix_colMeans <- function(A){
 vclMatrix_rowMeans <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -933,7 +1397,7 @@ vclMatrix_rowMeans <- function(A){
 vclMatrix_pmcc <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -959,11 +1423,11 @@ vclMatrix_pmcc <- function(A){
     return(B)
 }
 
-# GPU Pearson Covariance
-vclMatrix_euclidean <- function(A, D, diag, upper, p){
+# GPU Euclidean Distance
+vclMatrix_euclidean <- function(A, D, diag, upper, p, squareDist){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -976,10 +1440,12 @@ vclMatrix_euclidean <- function(A, D, diag, upper, p){
            "integer" = stop("integer type not currently implemented"),
            "float" = cpp_vclMatrix_eucl(A@address, 
                                         D@address, 
+                                        squareDist, 
                                         device_flag,
                                         6L),
            "double" = cpp_vclMatrix_eucl(A@address, 
                                          D@address,
+                                         squareDist,
                                          device_flag,
                                          8L),
            stop("Unsupported matrix type")
@@ -987,3 +1453,174 @@ vclMatrix_euclidean <- function(A, D, diag, upper, p){
     
     invisible(D)
 }
+
+# GPU Pairwise Euclidean Distance
+vclMatrix_peuclidean <- function(A, B, D, squareDist){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(D)
+    
+    switch(type,
+           "integer" = stop("integer type not currently implemented"),
+           "float" = cpp_vclMatrix_peucl(A@address,
+                                         B@address,
+                                        D@address, 
+                                        squareDist, 
+                                        device_flag,
+                                        6L),
+           "double" = cpp_vclMatrix_peucl(A@address, 
+                                          B@address,
+                                         D@address,
+                                         squareDist,
+                                         device_flag,
+                                         8L),
+           stop("Unsupported matrix type")
+    )
+    
+    invisible(D)
+}
+
+# GPU Element-Wise Absolute Value
+vclMatElemAbs <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- vclMatrix(nrow=nrow(A), ncol=ncol(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclMatrix_elem_abs(A@address,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclMatrix_elem_abs(A@address,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Vector maximum
+vclMatMax <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- switch(type,
+                integer = {
+                    stop("integer not currently implemented")
+                },
+                float = {cpp_vclMatrix_max(A@address,
+                                           device_flag,
+                                           6L)
+                },
+                double = {
+                    if(!deviceHasDouble()){
+                        stop("Selected GPU does not support double precision")
+                    }else{cpp_vclMatrix_max(A@address,
+                                            device_flag,
+                                            8L)
+                    }
+                },
+                stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Vector minimum
+vclMatMin <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- switch(type,
+                integer = {
+                    stop("integer not currently implemented")
+                },
+                float = {cpp_vclMatrix_min(A@address,
+                                           device_flag,
+                                           6L)
+                },
+                double = {
+                    if(!deviceHasDouble()){
+                        stop("Selected GPU does not support double precision")
+                    }else{cpp_vclMatrix_min(A@address,
+                                            device_flag,
+                                            8L)
+                    }
+                },
+                stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Matrix transpose
+vclMatrix_t <- function(A){
+    
+    type <- typeof(A)
+    
+#     device_flag <- 
+#         switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+#                "cpu" = 1, 
+#                "gpu" = 0,
+#                stop("unrecognized default device option"
+#                )
+#         )
+
+    oldContext <- currentContext()
+    if(oldContext != A@.context_index){
+        setContext(A@.context_index)
+    }
+
+    B <- vclMatrix(0, ncol = nrow(A), nrow = ncol(A), type = type)
+    
+    switch(type,
+           integer = {cpp_vclMatrix_transpose(A@address, B@address, 4L)},
+           float = {cpp_vclMatrix_transpose(A@address, B@address, 6L)},
+           double = {cpp_vclMatrix_transpose(A@address, B@address, 8L)},
+           stop("type not recognized")
+    )
+    
+    return(B)
+}
+
+

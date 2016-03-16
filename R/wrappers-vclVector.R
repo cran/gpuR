@@ -3,7 +3,7 @@
 vclVecInner <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -50,7 +50,7 @@ vclVecOuter <- function(A, B){
     if(length(B) != length(A)) stop("Non conformant arguments")
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -98,7 +98,7 @@ vclVecOuter <- function(A, B){
 vclVec_axpy <- function(alpha, A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -111,7 +111,7 @@ vclVec_axpy <- function(alpha, A, B){
     if(!missing(B))
     {
         if(length(B) != length(A)) stop("Lengths of matrices must match")
-        Z@address <- B@address
+        Z <- deepcopy(B)
     }
     
     switch(type,
@@ -142,11 +142,46 @@ vclVec_axpy <- function(alpha, A, B){
 }
 
 
+# GPU axpy wrapper
+vclVector_unary_axpy <- function(A){
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1, 
+               "gpu" = 0,
+               stop("unrecognized default device option")
+        )
+    
+    type <- typeof(A)
+    
+    Z <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               cpp_vclVector_unary_axpy(Z@address, 
+                                        device_flag,
+                                        4L)
+           },
+           float = {
+               cpp_vclVector_unary_axpy(Z@address, 
+                                        device_flag,
+                                        6L)
+           },
+           double = {
+               cpp_vclVector_unary_axpy(Z@address,
+                                        device_flag,
+                                        8L)
+           },
+           stop("type not recognized")
+    )
+    
+    return(Z)
+}
+
 # GPU Element-Wise Multiplication
 vclVecElemMult <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -187,11 +222,49 @@ vclVecElemMult <- function(A, B){
     return(C)
 }
 
+# GPU Scalar Element-Wise Multiplication
+vclVecScalarMult <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclVector_scalar_prod(C@address,
+                                              B,
+                                              device_flag,
+                                              6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclVector_scalar_prod(C@address,
+                                               B,
+                                               device_flag,
+                                               8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
 # GPU Element-Wise Division
 vclVecElemDiv <- function(A, B){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -231,12 +304,133 @@ vclVecElemDiv <- function(A, B){
 return(C)
 }
 
+# GPU Scalar Element-Wise Division
+vclVecScalarDiv <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- deepcopy(A)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclVector_scalar_div(C@address,
+                                             B,
+                                             device_flag,
+                                             6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclVector_scalar_div(C@address,
+                                              B,
+                                              device_flag,
+                                              8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Element-Wise Power
+vclVecElemPow <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    if(length(A) != length(B)){
+        stop("arguments not conformable")
+    }
+    
+    type <- typeof(A)
+    
+    C <- vclVector(length=length(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclVector_elem_pow(A@address,
+                                           B@address,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclVector_elem_pow(A@address,
+                                            B@address,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Element-Wise Power
+vclVecScalarPow <- function(A, B){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- vclVector(length=length(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclVector_scalar_pow(A@address,
+                                             B,
+                                             C@address,
+                                             device_flag,
+                                             6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclVector_scalar_pow(A@address,
+                                              B,
+                                              C@address,
+                                              device_flag,
+                                              8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
 
 # GPU Element-Wise Sine
 vclVecElemSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -274,7 +468,7 @@ return(C)
 vclVecElemArcSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -312,7 +506,7 @@ vclVecElemArcSin <- function(A){
 vclVecElemHypSin <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -350,7 +544,7 @@ vclVecElemHypSin <- function(A){
 vclVecElemCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -388,7 +582,7 @@ vclVecElemCos <- function(A){
 vclVecElemArcCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -427,7 +621,7 @@ return(C)
 vclVecElemHypCos <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -466,7 +660,7 @@ return(C)
 vclVecElemTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1L, 
                "gpu" = 0L,
                stop("unrecognized default device option"
@@ -505,7 +699,7 @@ return(C)
 vclVecElemArcTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -544,7 +738,7 @@ return(C)
 vclVecElemHypTan <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -583,7 +777,7 @@ return(C)
 vclVecElemLog <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -622,7 +816,7 @@ return(C)
 vclVecElemLogBase <- function(A, base){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -662,7 +856,7 @@ vclVecElemLogBase <- function(A, base){
 vclVecElemLog10 <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -701,7 +895,7 @@ return(C)
 vclVecElemExp <- function(A){
     
     device_flag <- 
-        switch(options("gpuR.default.device")$gpuR.default.device,
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
                "cpu" = 1, 
                "gpu" = 0,
                stop("unrecognized default device option"
@@ -730,9 +924,115 @@ vclVecElemExp <- function(A){
                                              8L)
                }
            },
-{
-    stop("type not recognized")
-})
-return(C)
+           stop("type not recognized")
+    )
+    return(C)
 }
+
+# GPU Element-Wise Absolute Value
+vclVecElemAbs <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- vclVector(length=length(A), type=type)
+    
+    switch(type,
+           integer = {
+               stop("integer not currently implemented")
+           },
+           float = {cpp_vclVector_elem_abs(A@address,
+                                           C@address,
+                                           device_flag,
+                                           6L)
+           },
+           double = {
+               if(!deviceHasDouble()){
+                   stop("Selected GPU does not support double precision")
+               }else{cpp_vclVector_elem_abs(A@address,
+                                            C@address,
+                                            device_flag,
+                                            8L)
+               }
+           },
+           stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Vector maximum
+vclVecMax <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- switch(type,
+                integer = {
+                    stop("integer not currently implemented")
+                },
+                float = {cpp_vclVector_max(A@address,
+                                           device_flag,
+                                           6L)
+                },
+                double = {
+                    if(!deviceHasDouble()){
+                        stop("Selected GPU does not support double precision")
+                    }else{cpp_vclVector_max(A@address,
+                                            device_flag,
+                                            8L)
+                    }
+                },
+                stop("type not recognized")
+    )
+    return(C)
+}
+
+# GPU Vector minimum
+vclVecMin <- function(A){
+    
+    device_flag <- 
+        switch(options("gpuR.default.device.type")$gpuR.default.device.type,
+               "cpu" = 1L, 
+               "gpu" = 0L,
+               stop("unrecognized default device option"
+               )
+        )
+    
+    type <- typeof(A)
+    
+    C <- switch(type,
+                integer = {
+                    stop("integer not currently implemented")
+                },
+                float = {cpp_vclVector_min(A@address,
+                                           device_flag,
+                                           6L)
+                },
+                double = {
+                    if(!deviceHasDouble()){
+                        stop("Selected GPU does not support double precision")
+                    }else{cpp_vclVector_min(A@address,
+                                            device_flag,
+                                            8L)
+                    }
+                },
+                stop("type not recognized")
+    )
+    return(C)
+}
+
 

@@ -6,11 +6,134 @@
 
 using namespace Rcpp;
 
+
+//copy an existing gpuMatrix
+template <typename T>
+SEXP
+cpp_deepcopy_gpuMatrix(SEXP ptrA_)
+{
+//    XPtr<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > ptrA(ptrA_);
+//    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > A(ptrA->data(), ptrA->rows(), ptrA->cols());
+//    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> *C = new Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(ptrA->rows(), ptrA->cols());
+//    
+//    // assign pointer
+//    *C = A;
+//    XPtr<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > pMat(C);
+//    return pMat;
+    
+    XPtr<dynEigenMat<T> > pA(ptrA_);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> A = pA->data();
+    dynEigenMat<T> *mat = new dynEigenMat<T>(A);
+    XPtr<dynEigenMat<T> > pMat(mat);
+    return pMat;
+}
+
+//copy an existing gpuVector
+template <typename T>
+SEXP
+cpp_deepcopy_gpuVector(SEXP ptrA_)
+{
+    XPtr<dynEigenVec<T> > pA(ptrA_);
+    Eigen::Matrix<T, Eigen::Dynamic, 1> A = pA->data();
+    dynEigenVec<T> *vec = new dynEigenVec<T>(A);
+    XPtr<dynEigenVec<T> > pVec(vec);
+    return pVec;
+}
+
+template <typename T>
+SEXP
+sliceGPUvec(const SEXP ptrA, int start, int end)
+{
+    XPtr<dynEigenVec<T> > pA(ptrA);
+    dynEigenVec<T> *vec = new dynEigenVec<T>();
+    vec->setPtr(pA->getPtr());
+    vec->setRange(start, end);
+    vec->updateSize();
+    
+    XPtr<dynEigenVec<T> > pVec(vec);
+    return pVec;
+}
+
+template <typename T>
+SEXP
+gpuMatBlock(
+    const SEXP ptrA, 
+    int rowStart, int rowEnd,
+    int colStart, int colEnd)
+{
+    XPtr<dynEigenMat<T> > pA(ptrA);
+    dynEigenMat<T> *mat = new dynEigenMat<T>();
+    mat->setPtr(pA->getPtr());
+    mat->setRange(rowStart, rowEnd, colStart, colEnd);
+    mat->setSourceDim(pA->nrow(), pA->ncol());
+    mat->updateDim();
+    
+    XPtr<dynEigenMat<T> > pMat(mat);
+    return pMat;
+}
+
+//cbind gpuMatrix objects
+template <typename T>
+SEXP
+cpp_cbind_gpuMatrix(SEXP ptrA_, SEXP ptrB_)
+{    
+    XPtr<dynEigenMat<T> > pA(ptrA_);
+    XPtr<dynEigenMat<T> > pB(ptrB_);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> A = pA->data();
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> B = pB->data();
+    
+    // initialize new matrix
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> C(A.rows(), A.cols() + B.cols());
+    C << A,B;
+    
+    dynEigenMat<T> *mat = new dynEigenMat<T>(C);
+    XPtr<dynEigenMat<T> > pMat(mat);
+    return pMat;
+}
+
+//rbind gpuMatrix objects
+template <typename T>
+SEXP
+cpp_rbind_gpuMatrix(SEXP ptrA_, SEXP ptrB_)
+{    
+    XPtr<dynEigenMat<T> > pA(ptrA_);
+    XPtr<dynEigenMat<T> > pB(ptrB_);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> A = pA->data();
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> B = pB->data();
+    
+    // initialize new matrix
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> C(A.rows()+B.rows(), A.cols());
+    C << A,B;
+    
+    dynEigenMat<T> *mat = new dynEigenMat<T>(C);
+    XPtr<dynEigenMat<T> > pMat(mat);
+    return pMat;
+}
+
+
+template <typename T>
+Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> >
+get_gpu_slice_vec(const SEXP ptrA)
+{
+    XPtr<dynEigenVec<T> > pVec(ptrA);
+    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > A = pVec->data();
+    return A;
+}
+
+template <typename T>
+SEXP
+get_gpu_slice_length(const SEXP ptrA)
+{
+    XPtr<dynEigenVec<T> > pVec(ptrA);
+    int A = pVec->length();
+    return wrap(A);
+}
+
 template <typename T>
 T
 GetVecElement(const SEXP data, const int idx)
 {    
-    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > A = XPtrToVecSEXP<T>(data);
+    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > A = EigenVecXPtrToMapEigenVec<T>(data);
     return(A(idx-1));
 }
 
@@ -18,8 +141,150 @@ template <typename T>
 void
 SetVecElement(const SEXP data, const int idx, SEXP value)
 {    
-    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > A = XPtrToVecSEXP<T>(data);
+    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > A = EigenVecXPtrToMapEigenVec<T>(data);
     A(idx-1) = as<T>(value);
+}
+
+
+/*** gpuMatrix deepcopy ***/
+// [[Rcpp::export]]
+SEXP
+cpp_deepcopy_gpuMatrix(SEXP ptrA, const int type_flag)
+{
+    switch(type_flag) {
+        case 4:
+            return cpp_deepcopy_gpuMatrix<int>(ptrA);
+        case 6:
+            return cpp_deepcopy_gpuMatrix<float>(ptrA);
+        case 8:
+            return cpp_deepcopy_gpuMatrix<double>(ptrA);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuMatrix object!");
+    }
+}
+
+/*** gpuMatrix cbind ***/
+// [[Rcpp::export]]
+SEXP
+cpp_cbind_gpuMatrix(SEXP ptrA, SEXP ptrB, const int type_flag)
+{
+    switch(type_flag) {
+        case 4:
+            return cpp_cbind_gpuMatrix<int>(ptrA, ptrB);
+        case 6:
+            return cpp_cbind_gpuMatrix<float>(ptrA, ptrB);
+        case 8:
+            return cpp_cbind_gpuMatrix<double>(ptrA, ptrB);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuMatrix object!");
+    }
+}
+
+/*** gpuMatrix rbind ***/
+// [[Rcpp::export]]
+SEXP
+cpp_rbind_gpuMatrix(SEXP ptrA, SEXP ptrB, const int type_flag)
+{
+    switch(type_flag) {
+        case 4:
+            return cpp_rbind_gpuMatrix<int>(ptrA, ptrB);
+        case 6:
+            return cpp_rbind_gpuMatrix<float>(ptrA, ptrB);
+        case 8:
+            return cpp_rbind_gpuMatrix<double>(ptrA, ptrB);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuMatrix object!");
+    }
+}
+
+/*** gpuVector deepcopy ***/
+// [[Rcpp::export]]
+SEXP
+cpp_deepcopy_gpuVector(SEXP ptrA, const int type_flag)
+{
+    switch(type_flag) {
+        case 4:
+            return cpp_deepcopy_gpuVector<int>(ptrA);
+        case 6:
+            return cpp_deepcopy_gpuVector<float>(ptrA);
+        case 8:
+            return cpp_deepcopy_gpuVector<double>(ptrA);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuVector object!");
+    }
+}
+
+/*** Slice Vector ***/
+// [[Rcpp::export]]
+SEXP
+sliceGPUvec(SEXP ptrA, const int start, const int end, const int type_flag)
+{    
+    switch(type_flag) {
+        case 4:
+            return sliceGPUvec<int>(ptrA, start, end);
+        case 6:
+            return sliceGPUvec<float>(ptrA, start, end);
+        case 8:
+            return sliceGPUvec<double>(ptrA, start, end);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuVector object!");
+    }
+}
+    
+    
+/*** Matrix Block ***/
+// [[Rcpp::export]]
+SEXP
+gpuMatBlock(
+    SEXP ptrA, 
+    int rowStart, int rowEnd,
+    int colStart, int colEnd,
+    const int type_flag)
+{    
+    switch(type_flag) {
+        case 4:
+            return gpuMatBlock<int>(ptrA, rowStart, rowEnd, colStart, colEnd);
+        case 6:
+            return gpuMatBlock<float>(ptrA, rowStart, rowEnd, colStart, colEnd);
+        case 8:
+            return gpuMatBlock<double>(ptrA, rowStart, rowEnd, colStart, colEnd);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuMatrix object!");
+    }
+}
+
+
+// [[Rcpp::export]]
+SEXP
+get_gpu_slice_vec(SEXP ptrA, const int type_flag)
+{    
+    switch(type_flag) {
+        case 4:
+            return wrap(get_gpu_slice_vec<int>(ptrA));
+        case 6:
+            return wrap(get_gpu_slice_vec<float>(ptrA));
+        case 8:
+            return wrap(get_gpu_slice_vec<double>(ptrA));
+        default:
+            throw Rcpp::exception("unknown type detected for gpuVectorSlice object!");
+    }
+}
+
+
+// [[Rcpp::export]]
+SEXP
+get_gpu_slice_length(SEXP ptrA, const int type_flag)
+{    
+    switch(type_flag) {
+        case 4:
+            return get_gpu_slice_length<int>(ptrA);
+        case 6:
+            return get_gpu_slice_length<float>(ptrA);
+        case 8:
+            return get_gpu_slice_length<double>(ptrA);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuVectorSlice object!");
+    }
 }
 
 /*** Get/Set Vector Elements ***/
@@ -170,50 +435,98 @@ GetMatElement(SEXP ptrA, const int nr, const int nc, const int type_flag)
 /*** vector imports ***/
 
 // [[Rcpp::export]]
-SEXP vectorToSEXP(SEXP ptrA, const int type_flag)
+SEXP sexpVecToEigenVecXptr(SEXP ptrA, const int size, const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return sexpVecToXptr<int>(ptrA);
+            return sexpVecToEigenVecXptr<int>(ptrA, size);
         case 6:
-            return sexpVecToXptr<float>(ptrA);
+            return sexpVecToEigenVecXptr<float>(ptrA, size);
         case 8:
-            return sexpVecToXptr<double>(ptrA);
+            return sexpVecToEigenVecXptr<double>(ptrA, size);
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }
+}
+
+
+// convert SEXP Vector to Eigen matrix
+template <typename T>
+SEXP sexpVecToEigenXptr(SEXP A, int nr, int nc)
+{
+//    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> *eigen_mat = new Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(nr, nc);
+//    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> temp = as<Eigen::Matrix<T, Eigen::Dynamic, 1> >(A);
+//    temp.resize(nr, nc);
+//    *eigen_mat = temp;
+//    XPtr<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > pMat(eigen_mat);
+//    return pMat;
+    
+    dynEigenMat<T> *mat = new dynEigenMat<T>(nr, nc);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> temp = as<Eigen::Matrix<T, Eigen::Dynamic, 1> >(A);
+    temp.resize(nr, nc);
+    mat->setMatrix(temp);
+    XPtr<dynEigenMat<T> > pMat(mat);
+    return pMat;
+}
+
+// convert SEXP Vector to Eigen matrix
+template <typename T>
+SEXP initScalarEigenXptr(T A, int nr, int nc)
+{    
+    dynEigenMat<T> *mat = new dynEigenMat<T>(A, nr, nc);
+    XPtr<dynEigenMat<T> > pMat(mat);
+    return pMat;
 }
 
 // [[Rcpp::export]]
 SEXP
-vectorToMat(SEXP ptrA, const int nr, const int nc, const int type_flag)
+sexpVecToEigenXptr(SEXP ptrA, const int nr, const int nc, const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return sexpVecToMatXptr<int>(ptrA, nr, nc);
+            return sexpVecToEigenXptr<int>(ptrA, nr, nc);
         case 6:
-            return sexpVecToMatXptr<float>(ptrA, nr, nc);
+            return sexpVecToEigenXptr<float>(ptrA, nr, nc);
         case 8:
-            return sexpVecToMatXptr<double>(ptrA, nr, nc);
+            return sexpVecToEigenXptr<double>(ptrA, nr, nc);
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }
 }
 
+
+// [[Rcpp::export]]
+SEXP
+initScalarEigenXptr(SEXP scalar, const int nr, const int nc, const int type_flag)
+{
+    switch(type_flag) {
+        case 4:
+            return initScalarEigenXptr<int>(as<int>(scalar), nr, nc);
+        case 6:
+            return initScalarEigenXptr<float>(as<float>(scalar), nr, nc);
+        case 8:
+            return initScalarEigenXptr<double>(as<double>(scalar), nr, nc);
+        default:
+            throw Rcpp::exception("unknown type detected for gpuMatrix object!");
+    }
+}
 
 /*** matrix imports ***/
 
 // [[Rcpp::export]]
 SEXP
-matrixToGPUXptr(SEXP ptrA, const int type_flag)
+sexpToEigenXptr(SEXP ptrA, 
+    const int nr,
+    const int nc, 
+    const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return sexpToXptr<int>(ptrA);
+            return sexpToEigenXptr<int>(ptrA, nr, nc);
         case 6:
-            return sexpToXptr<float>(ptrA);
+            return sexpToEigenXptr<float>(ptrA, nr, nc);
         case 8:
-            return sexpToXptr<double>(ptrA);
+            return sexpToEigenXptr<double>(ptrA, nr, nc);
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }
@@ -223,15 +536,15 @@ matrixToGPUXptr(SEXP ptrA, const int type_flag)
 
 // [[Rcpp::export]]
 SEXP
-VecXptrToVecSEXP(SEXP ptrA, const int type_flag)
+EigenVecXPtrToMapEigenVec(SEXP ptrA, const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return wrap(XPtrToVecSEXP<int>(ptrA));
+            return wrap(EigenVecXPtrToMapEigenVec<int>(ptrA));
         case 6:
-            return wrap(XPtrToVecSEXP<float>(ptrA));
+            return wrap(EigenVecXPtrToMapEigenVec<float>(ptrA));
         case 8:
-            return wrap(XPtrToVecSEXP<double>(ptrA));
+            return wrap(EigenVecXPtrToMapEigenVec<double>(ptrA));
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }
@@ -245,11 +558,51 @@ MatXptrToMatSEXP(SEXP ptrA, const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return wrap(XPtrToSEXP<int>(ptrA));
+        {
+            Rcpp::XPtr<dynEigenMat<int> > pMat(ptrA);
+            Eigen::Ref<Eigen::MatrixXi> refA = pMat->data();
+//            Eigen::Ref<Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> > refA = EigenXPtrToMapEigen<int>(ptrA);
+            
+            
+//            Eigen::Map<Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> > mapA(refA.data(), pMat->nrow(), pMat->ncol());
+//            Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> mapA = refA;
+            Eigen::Map<Eigen::MatrixXi, 0, Eigen::OuterStride<> > mapA(refA.data(), refA.rows(), refA.cols(),
+                                                                        Eigen::OuterStride<>(refA.outerStride()));
+            return wrap(mapA);
+        }
         case 6:
-            return wrap(XPtrToSEXP<float>(ptrA));
+        {
+//            Rcpp::XPtr<dynEigenMat<float> > pMat(ptrA);
+//            Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> > refA = EigenXPtrToMapEigen<float>(ptrA);
+            
+            Rcpp::XPtr<dynEigenMat<float> > pMat(ptrA);
+            Eigen::Ref<Eigen::MatrixXf> refA = pMat->data();
+            
+//            std::cout << "float refA" << std::endl;
+//            std::cout << refA << std::endl;
+//            
+//            std::cout << refA.rows() << refA.cols() << std::endl;
+            
+//            Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> > mapA(refA.data(), mapA->nrow(), pMat->ncol());
+            Eigen::Map<Eigen::MatrixXf, 0, Eigen::OuterStride<> > mapA(refA.data(), refA.rows(), refA.cols(),
+                                                                        Eigen::OuterStride<>(refA.outerStride()));
+//            Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> mapA = refA;
+//            std::cout << "float mapA" << std::endl;
+//            std::cout << mapA << std::endl;
+            return wrap(mapA);  
+        }
         case 8:
-            return wrap(XPtrToSEXP<double>(ptrA));
+        {
+            Rcpp::XPtr<dynEigenMat<double> > pMat(ptrA);
+            Eigen::Ref<Eigen::MatrixXd> refA = pMat->data();
+//            Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > refA = EigenXPtrToMapEigen<double>(ptrA);
+            
+            Eigen::Map<Eigen::MatrixXd, 0, Eigen::OuterStride<> > mapA(refA.data(), refA.rows(), refA.cols(),
+                                                                        Eigen::OuterStride<>(refA.outerStride()));
+//            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > mapA(refA.data(), pMat->nrow(), pMat->ncol());
+//            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> mapA = refA;
+            return wrap(mapA); 
+        }
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }
@@ -259,15 +612,15 @@ MatXptrToMatSEXP(SEXP ptrA, const int type_flag)
 
 // [[Rcpp::export]]
 SEXP
-emptyVecXptr(const int size, const int type_flag)
+emptyEigenVecXptr(const int size, const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return emptyVecXptr<int>(size);;
+            return emptyEigenVecXptr<int>(size);;
         case 6:
-            return emptyVecXptr<float>(size);
+            return emptyEigenVecXptr<float>(size);
         case 8:
-            return emptyVecXptr<double>(size);
+            return emptyEigenVecXptr<double>(size);
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }
@@ -279,15 +632,15 @@ emptyVecXptr(const int size, const int type_flag)
 
 // [[Rcpp::export]]
 SEXP
-emptyMatXptr(const int nr, const int nc, const int type_flag)
+emptyEigenXptr(const int nr, const int nc, const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            return emptyXptr<int>(nr, nc);;
+            return emptyEigenXptr<int>(nr, nc);;
         case 6:
-            return emptyXptr<float>(nr, nc);
+            return emptyEigenXptr<float>(nr, nc);
         case 8:
-            return emptyXptr<double>(nr, nc);
+            return emptyEigenXptr<double>(nr, nc);
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
     }

@@ -29,20 +29,53 @@ setMethod('vclVector',
                           in data")
               }
               
-              device_flag <- ifelse(options("gpuR.default.device") == "gpu", 0, 1)
+              device_flag <- ifelse(options("gpuR.default.device.type") == "gpu", 0, 1)
+              
+              device <- currentDevice()
+              
+              context_index <- currentContext()
+              device_index <- device$device_index
+              device_type <- device$device_type
+              device_name <- switch(device_type,
+                                    "gpu" = gpuInfo(device_idx = as.integer(device_index))$deviceName,
+                                    "cpu" = cpuInfo(device_idx = as.integer(device_index))$deviceName,
+                                    stop("Unrecognized device type")
+              )
+              platform_index <- currentPlatform()$platform_index
+              platform_name <- platformInfo(platform_index)$platformName
+              
+              if(type == "double" & !deviceHasDouble(platform_index, device_index)){
+                  stop("Double precision not supported for current device. 
+                       Try setting 'type = 'float'' or change device if multiple available.")
+              }
               
               data = switch(type,
                             integer = {
                                 new("ivclVector", 
-                                    address=vectorToVCL(data, 4L, device_flag))
+                                    address=vectorToVCL(data, 4L, device_flag),
+                                    .context_index = context_index,
+                                    .platform_index = platform_index,
+                                    .platform = platform_name,
+                                    .device_index = device_index,
+                                    .device = device_name)
                             },
                             float = {
                                 new("fvclVector", 
-                                    address=vectorToVCL(data, 6L, device_flag))
+                                    address=vectorToVCL(data, 6L, device_flag),
+                                    .context_index = context_index,
+                                    .platform_index = platform_index,
+                                    .platform = platform_name,
+                                    .device_index = device_index,
+                                    .device = device_name)
                             },
                             double = {
                                 new("dvclVector",
-                                    address = vectorToVCL(data, 8L, device_flag))
+                                    address = vectorToVCL(data, 8L, device_flag),
+                                    .context_index = context_index,
+                                    .platform_index = platform_index,
+                                    .platform = platform_name,
+                                    .device_index = device_index,
+                                    .device = device_name)
                             },
                             stop("this is an unrecognized 
                                  or unimplemented data type")
@@ -63,20 +96,53 @@ setMethod('vclVector',
               if (length <= 0) stop("length must be a positive integer")
               if (!is.integer(length)) stop("length must be a positive integer")
               
-              device_flag <- ifelse(options("gpuR.default.device") == "gpu", 0, 1)
+              device_flag <- ifelse(options("gpuR.default.device.type") == "gpu", 0, 1)
+              
+              device <- currentDevice()
+              
+              context_index <- currentContext()
+              device_index <- device$device_index
+              device_type <- device$device_type
+              device_name <- switch(device_type,
+                                    "gpu" = gpuInfo(device_idx = as.integer(device_index))$deviceName,
+                                    "cpu" = cpuInfo(device_idx = as.integer(device_index))$deviceName,
+                                    stop("Unrecognized device type")
+              )
+              platform_index <- currentPlatform()$platform_index
+              platform_name <- platformInfo(platform_index)$platformName
+              
+              if(type == "double" & !deviceHasDouble(platform_index, device_index)){
+                  stop("Double precision not supported for current device. 
+                       Try setting 'type = 'float'' or change device if multiple available.")
+              }
               
               data = switch(type,
                             integer = {
                                 new("ivclVector", 
-                                    address=emptyVecVCL(length, 4L, device_flag))
+                                    address=emptyVecVCL(length, 4L, device_flag),
+                                    .context_index = context_index,
+                                    .platform_index = platform_index,
+                                    .platform = platform_name,
+                                    .device_index = device_index,
+                                    .device = device_name)
                             },
                             float = {
                                 new("fvclVector", 
-                                    address=emptyVecVCL(length, 6L, device_flag))
+                                    address=emptyVecVCL(length, 6L, device_flag),
+                                    .context_index = context_index,
+                                    .platform_index = platform_index,
+                                    .platform = platform_name,
+                                    .device_index = device_index,
+                                    .device = device_name)
                             },
                             double = {
                                 new("dvclVector",
-                                    address = emptyVecVCL(length, 8L, device_flag))
+                                    address = emptyVecVCL(length, 8L, device_flag),
+                                    .context_index = context_index,
+                                    .platform_index = platform_index,
+                                    .platform = platform_name,
+                                    .device_index = device_index,
+                                    .device = device_name)
                             },
                             stop("this is an unrecognized 
                                  or unimplemented data type")

@@ -9,13 +9,28 @@
 #' There are multiple child classes that correspond
 #' to the particular data type contained.  These include
 #' \code{ivclVector}.
+#' @section Slots:
+#'  Common to all vclMatrix objects in the package
+#'  \describe{
+#'      \item{\code{address}:}{Pointer to data matrix}
+#'      \item{\code{.context_index}:}{Integer index of OpenCL contexts}
+#'      \item{\code{.platform_index}:}{Integer index of OpenCL platforms}
+#'      \item{\code{.platform}:}{Name of OpenCL platform}
+#'      \item{\code{.device_index}:}{Integer index of active device}
+#'      \item{\code{.device}:}{Name of active device}
+#'  }
 #' @name vclVector-class
 #' @rdname vclVector-class
 #' @author Charles Determan Jr.
 #' @seealso \code{\link{ivclVector-class}}
 #' @export
 setClass('vclVector', 
-         slots = c(address="externalptr"))
+         slots = c(address="externalptr",
+                   .context_index = "integer",
+                   .platform_index = "integer",
+                   .platform = "character",
+                   .device_index = "integer",
+                   .device = "character"))
 
 # setClass('vclVector',
 #          representation("VIRTUAL"),
@@ -101,3 +116,16 @@ setClass("dvclVector",
              }
              TRUE
          })
+
+# @export
+setClass("ivclVectorSlice", 
+         contains = "ivclVector")
+
+# @export
+setClass("fvclVectorSlice", 
+         contains = "fvclVector")
+
+# @export
+setClass("dvclVectorSlice", 
+         contains = "dvclVector")
+

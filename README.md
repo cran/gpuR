@@ -1,13 +1,21 @@
 # gpuR
 
+###Gitter rooms available for discussion
+[![chat](https://img.shields.io/badge/gitter-chat-brightgreen.svg)](https://gitter.im/cdeterman/gpuR)
+[![general](https://img.shields.io/badge/gitter-general-brightgreen.svg)](https://gitter.im/cdeterman/gpuR/general)
+[![development](https://img.shields.io/badge/gitter-development-brightgreen.svg)](https://gitter.im/cdeterman/gpuR/development)
+[![testing](https://img.shields.io/badge/gitter-testing-brightgreen.svg)](https://gitter.im/cdeterman/gpuR/Tested_GPUs)
+
 ### Build Status
-|                 | Build           |
-|-----------------|-----------------|
-| Linux x86_64    | [![Build Status](https://travis-ci.org/cdeterman/gpuR.png?branch=master)](https://travis-ci.org/cdeterman/gpuR)      |
-| OSX             | [![Build Status](https://travis-ci.org/cdeterman/gpuR.png?branch=macosx)](https://travis-ci.org/cdeterman/gpuR)          |
-| Windows x86     | [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/cdeterman/gpuR?branch=master&svg=true)](https://ci.appveyor.com/project/cdeterman/gpuR)     |
+|                 | Build           | Dev             |
+|-----------------|-----------------|-----------------|
+| Linux x86_64    | [![Build Status](https://travis-ci.org/cdeterman/gpuR.png?branch=master)](https://travis-ci.org/cdeterman/gpuR)      | [![Build Status](https://travis-ci.org/cdeterman/gpuR.png?branch=develop)](https://travis-ci.org/cdeterman/gpuR) |
+| OSX             | [![Build Status](https://travis-ci.org/cdeterman/gpuR.png?branch=macosx)](https://travis-ci.org/cdeterman/gpuR)          | |
+| Windows x86     | [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/cdeterman/gpuR?branch=master&svg=true)](https://ci.appveyor.com/project/cdeterman/gpuR)     | [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/cdeterman/gpuR?branch=develop&svg=true)](https://ci.appveyor.com/project/cdeterman/gpuR) |
 
 Test coverage: [![Coverage Status](https://coveralls.io/repos/cdeterman/gpuR/badge.svg)](https://coveralls.io/r/cdeterman/gpuR?branch=master)
+
+Community Use: [![Downloads](http://cranlogs.r-pkg.org/badges/gpuR?color=brightgreen)](http://www.r-pkg.org/pkg/gpuR)
 
 Welcome to my R package for simple GPU computing.  Although there are a few
 existing packages to leverage the power of GPU's they are either specific
@@ -17,7 +25,7 @@ any GPU (via an OpenCL backend).  This is accomplished by interfacing with the
 ViennaCL library that I have packaged in the R package 
 [RViennaCL](http://github.com/cdeterman/RViennaCL).  To make the R API simple,
 I created new classes similar to the structure of the 
-[Matrix](http://cran.r-project.org/web/packages/Matrix/index.html)
+[Matrix](http://cran.r-project.org/package=Matrix)
 package.  By doing so, typical methods may be overloaded to make for a very
 pleasing sytax.  For example, to perform vector addition the syntax is: 
 

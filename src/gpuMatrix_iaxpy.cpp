@@ -3,7 +3,7 @@
 
 #include <RcppEigen.h>
 
-#include "gpuR/eigen_helpers.hpp"
+#include "gpuR/dynEigenMat.hpp"
 #include "gpuR/cl_helpers.hpp"
 
 using namespace cl;
@@ -12,11 +12,12 @@ using namespace Rcpp;
 
 //[[Rcpp::export]]
 void cpp_gpuMatrix_iaxpy(SEXP alpha_, SEXP ptrA_, SEXP ptrB_,
-    SEXP sourceCode_)
+    SEXP sourceCode_, int device_type)
 {
     // declarations
     cl_int err = 0;
     std::string sourceCode = as<std::string>(sourceCode_);
+    cl_device_type ocl_device;
     
     #if defined(__APPLE__) || defined(__MACOSX)
         #ifdef HAVE_OPENCL_CL2_HPP
@@ -30,14 +31,20 @@ void cpp_gpuMatrix_iaxpy(SEXP alpha_, SEXP ptrA_, SEXP ptrB_,
         #endif
     #endif
     
-//    std::string kernel_string = as<std::string>(kernel_function_);
-//    const char* kernel_function = kernel_string.data();
-        
-    Rcpp::XPtr<dynEigen<int> > ptrA(ptrA_);
-    Rcpp::XPtr<dynEigen<int> > ptrB(ptrB_);
+    XPtr<dynEigenMat<int> > ptrA(ptrA_);
+    XPtr<dynEigenMat<int> > ptrB(ptrB_);
     
-    Eigen::Map<Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> > Am(ptrA->ptr(), ptrA->nrow(), ptrA->ncol());
-    Eigen::Map<Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> > Bm(ptrB->ptr(), ptrB->nrow(), ptrB->ncol());
+    Eigen::Ref<Eigen::MatrixXi> refA = ptrA->data();
+    Eigen::Ref<Eigen::MatrixXi> refB = ptrB->data();
+    
+    Eigen::Map<Eigen::MatrixXi, 0, Eigen::OuterStride<> > Am(
+        refA.data(), refA.rows(), refA.cols(),
+        Eigen::OuterStride<>(refA.outerStride())
+    );
+    Eigen::Map<Eigen::MatrixXi, 0, Eigen::OuterStride<> > Bm(
+        refB.data(), refB.rows(), refB.cols(),
+        Eigen::OuterStride<>(refB.outerStride())
+    );
     
     const int N = Am.size();
     const int alpha = as<int>(alpha_);
@@ -53,7 +60,14 @@ void cpp_gpuMatrix_iaxpy(SEXP alpha_, SEXP ptrA_, SEXP ptrB_,
         0
     };
 
-    Context context = createContext(CL_DEVICE_TYPE_GPU, cps, err);
+    // need to conditionally do CL_DEVICE_TYPE_CPU
+    if(device_type == 0){
+        ocl_device = CL_DEVICE_TYPE_GPU;
+    }else{
+        ocl_device = CL_DEVICE_TYPE_CPU;
+    }
+    
+    Context context = createContext(ocl_device, cps, err);
         
     // Get a list of devices on this platform
     std::vector<Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
@@ -128,8 +142,8 @@ void cpp_gpuMatrix_iaxpy(SEXP alpha_, SEXP ptrA_, SEXP ptrB_,
     Buffer bufferB = Buffer(context, CL_MEM_READ_WRITE, N * sizeof(int), NULL, &err);
 
     // Copy lists A and B to the memory buffers
-    queue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, N * sizeof(int), &Am(0));
-    queue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, N * sizeof(int), &Bm(0));
+    queue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, N * sizeof(int), Am.data());
+    queue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, N * sizeof(int), Bm.data());
 
     // Set arguments to kernel
     err = kernel.setArg(0, alpha);
@@ -144,5 +158,5 @@ void cpp_gpuMatrix_iaxpy(SEXP alpha_, SEXP ptrA_, SEXP ptrB_,
 //        err = queue.enqueueNDRangeKernel(kernel, NullRange, global, NullRange);
         
     // Read buffer C into a local list        
-    err = queue.enqueueReadBuffer(bufferB, CL_TRUE, 0, N * sizeof(int), &Bm(0));
+    err = queue.enqueueReadBuffer(bufferB, CL_TRUE, 0, N * sizeof(int), Bm.data());
 }
