@@ -1,7 +1,7 @@
-120a56c2466d96c89845d0d6d2fb7daf *DESCRIPTION
+28f8ae81014144c60bd2e61067bb4ef9 *DESCRIPTION
 0bbaf3dc1d93af500e9d1238614e2ca4 *INSTALL
 90a5d67a5e8451a7f430ec5ca7df108a *NAMESPACE
-bf5b5669d61a2536d138a6e5a469bbda *R/RcppExports.R
+d8708ddc2b5a026eef88065c45bae3b4 *R/RcppExports.R
 ff4bb8c4e09b7bbcb114560734c24480 *R/class-gpuMatrix.R
 c724e473edb05783cb82a7e0c4239a3a *R/class-gpuVector.R
 5d378050dc16c39490eeaabed51ebe01 *R/class-vclMatrix.R
@@ -11,9 +11,9 @@ d2ee25a81870f4d5f3297a94472373f8 *R/generics.R
 303beb31ede413b48cc1a562ac7bc212 *R/gpuMatrix.R
 4e318b9f33ab278579067cc382532587 *R/gpuVector.R
 2c6c9246c9ce71c20f75d8e061904217 *R/hello-gpuR.R
-d81c363d00ce149a0b83fbc441099684 *R/methods-gpuMatrix.R
+c65ea7ff8ab778681b8584fd3ee50562 *R/methods-gpuMatrix.R
 c2ed39b340ea9c3adc1b8835a6939e50 *R/methods-gpuVector.R
-21bafe23954e288bfaad823c15a7ebc3 *R/methods-vclMatrix.R
+553aa1666a7a53caf07af12e9cf45331 *R/methods-vclMatrix.R
 e1a107e0d1b879a49a8ea85cbfff9be3 *R/methods-vclVector.R
 f36c7fcbf2d8378802a151f78d1142b3 *R/print.R
 8df2c401ea96537bcb17f4ae05d5612c *R/test_utils.R
@@ -25,10 +25,10 @@ cec037cdff814adc32570f6479147d03 *R/wrappers-gpuVector.R
 c9f17b94b58a403a52782198d2adb2a7 *R/wrappers-utils.R
 346155a2e20af4984008dc69a63bde4f *R/wrappers-vclMatrix.R
 2d4c7972c04c06eea1a64c6c6fb52111 *R/wrappers-vclVector.R
-194cb77464ef93b6cfcf373e0cb27bb4 *R/wrappers.R
+9dddfdf04a0cb211b6b524218fd160db *R/wrappers.R
 ddb2ae7ad242ccf9e12f25c299195838 *R/zzz.R
 a0e780523fd0e70dced103df1dd8b1fb *README.md
-1c43dea59bd0d20981f051829916726c *build/vignette.rds
+964889a42c9aa59f980b33a8819318f9 *build/vignette.rds
 5bc426dafd8c6fdac8f6222a57d12650 *cleanup
 efe9381b9c055ece3bad5f5c172b9db6 *cleanup.win
 603fc5f425b48f3d282a65ebd0b2e5cf *configure
@@ -37,8 +37,8 @@ efe9381b9c055ece3bad5f5c172b9db6 *cleanup.win
 94cfa705009eecfbc94a8bb98d11e992 *inst/CL/basic_gemm.cl
 3a22c571f86d22f0730d80879cf04f73 *inst/NEWS.Rd
 a021aaf6656480306616049582f9cc21 *inst/doc/gpuR.R
-627778fcd28d1afe0b7ec7fc3a72aea4 *inst/doc/gpuR.Rnw
-e28dd17d5179ec342665515bbca03719 *inst/doc/gpuR.pdf
+435a272304b5f595e1d0f2f367feb8f2 *inst/doc/gpuR.Rnw
+f6895efd49873d43334b306249223f22 *inst/doc/gpuR.pdf
 a7003ddb8f31b4adb9423ab36fe057e2 *inst/include/gpuR/cl_helpers.hpp
 ec483e31dfb8d639ef11ff68b2fbb47c *inst/include/gpuR/dynEigenMat.hpp
 95ba69c8d1556acb94b26d3bb03313dc *inst/include/gpuR/dynEigenVec.hpp
@@ -165,7 +165,7 @@ d1b26b3ffa649b41e5538f08cb02a5ce *man/vclMatrix.colSums.Rd
 dfc8c55ac014806e8c0d89fb6d3608fb *man/vclVector-class.Rd
 ceeba505277b115db614968d754a1adc *man/vclVector-methods.Rd
 28123d69c32de78ff432321edc28de52 *src/Makevars.win
-57fd2b38b098ebc71e741efd0126a45a *src/RcppExports.cpp
+bc4abbd5df891a232f9226f9c2a56eca *src/RcppExports.cpp
 3c89555c441a707490de54c2b18948b2 *src/context.cpp
 87e1727d732e72228fcc1923d3c5a908 *src/device.cpp
 b0092d048a8a7d74b4a41f33c47e4908 *src/dynEigenMat.cpp
@@ -174,7 +174,7 @@ b0092d048a8a7d74b4a41f33c47e4908 *src/dynEigenMat.cpp
 6d5b83d9991c44803eb427cb2d554288 *src/dynVCLVec.cpp
 78674ac5b37803138f7c2c4ed8c8c114 *src/gpuEigenPtr.cpp
 ae08051e615c7e077d754fbe00b03935 *src/gpuMatrix_iaxpy.cpp
-3a8ccba81b50c8cab5fae2ea1a2b2223 *src/gpuMatrix_igemm.cpp
+8da1d8150868a418802b1baf280e4e88 *src/gpuMatrix_igemm.cpp
 faeebea6215bc28c444e799ea2f27bdc *src/gpuVector_iaxpy.cpp
 04f29cdc6cab8dc6308f13928593aa6a *src/gpu_vector_algebra.cpp
 d353f87839384032de583db46d1ca7cc *src/platform.cpp
@@ -243,4 +243,4 @@ acc44e64c40daa31d2185b33a29a2ab8 *tests/testthat/test_vclMatrix_utils.R
 0318a2318f9072158db937895b7834f4 *tests/testthat/test_vclVector_math.R
 f3fb680209b8b8614c14c8fe633f8c71 *tests/testthat/test_vclVector_utils.R
 9f40261480aaa5b6b5dd9d1af0d28af9 *vignettes/gpuR-concordance.tex
-627778fcd28d1afe0b7ec7fc3a72aea4 *vignettes/gpuR.Rnw
+435a272304b5f595e1d0f2f367feb8f2 *vignettes/gpuR.Rnw
