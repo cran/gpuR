@@ -1,13 +1,11 @@
 library(gpuR)
 context("CPU vclVector Utility Functions")
 
-# set option to use CPU instead of GPU
-options(gpuR.default.device.type = "cpu")
-
 set.seed(123)
 ORDER <- 100
 A <- sample(seq.int(10), ORDER, replace = TRUE)
 D <- rnorm(ORDER)
+D2 <- rnorm(ORDER)
 
 test_that("integer vclVector length method successful", {
     
@@ -117,4 +115,64 @@ test_that("dvclVector set accession method successful", {
 })
 
 
-options(gpuR.default.device.type = "gpu")
+test_that("vclVector as.vector method", {
+    
+    has_cpu_skip()
+    
+    dgpu <- vclVector(D)
+    fgpu <- vclVector(D, type="float")
+    igpu <- vclVector(A)
+    
+    expect_equal(as.vector(dgpu), D,
+                      info = "double as.vector not equal")
+    expect_equal(as.vector(fgpu), D,
+                      info = "float as.vector not equal",
+                      tolerance = 1e-07)
+    expect_equal(as.vector(dgpu), D,
+                      info = "integer as.vector not equal")
+    
+    
+    expect_is(as.vector(dgpu), 'numeric',
+              info = "double as.vector not producing 'vector' class")
+    expect_is(as.vector(fgpu), 'numeric',
+              info = "float as.vector not producing 'vector' class")
+    expect_is(as.vector(igpu), 'integer',
+              info = "integer as.vector not producing 'vector' class")
+})
+
+
+test_that("CPU vclVector set vector access", {
+    
+    has_cpu_skip()
+    
+    gpuA <- vclVector(D)
+    gpuF <- vclVector(D, type = "float")
+    
+    gpuA[] <- D2
+    gpuF[] <- D2
+    
+    expect_equivalent(gpuA[], D2,
+                      info = "updated dvclVector not equivalent to assigned base vector")
+    
+    expect_equal(gpuF[], D2, tolerance=1e-07,
+                 info = "updated fvclVector not equivalent to assigned base vector")
+    
+})
+
+test_that("CPU vclVector set vclVector access", {
+    
+    has_cpu_skip()
+    
+    gpuA <- vclVector(D)
+    gpuD <- vclVector(D2)
+    gpuF <- vclVector(D, type = "float")
+    gpuDF <- vclVector(D2, type = "float")
+    
+    gpuA[] <- gpuD
+    gpuF[] <- gpuDF
+    
+    expect_equivalent(gpuA[], gpuD[], 
+                      info = "updated dvclVector not equivalent to assigned vclVector")
+    expect_equal(gpuF[], gpuDF[], tolerance=1e-07,
+                 info = "updated fvclVector not equivalent to assigned base vclVector")
+})

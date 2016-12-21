@@ -1,15 +1,14 @@
 library(gpuR)
 context("CPU vclMatrix Utility Functions")
 
-# set option to use CPU instead of GPU
-options(gpuR.default.device.type = "cpu")
-
 set.seed(123)
 A <- matrix(seq.int(100), 10)
 D <- matrix(rnorm(100), 10)
+D2 <- matrix(rnorm(100), 10)
 
+cnames <- paste0("V", seq(10))
 
-test_that("vclMatrix get element access", {
+test_that("CPU vclMatrix get element access", {
     has_cpu_skip()
     
     dgpu <- vclMatrix(D)
@@ -36,9 +35,16 @@ test_that("vclMatrix get element access", {
                  info = "float element subset not equivalent ")
     expect_equivalent(igpu[1,2], A[1,2],
                       info = "integer element subset not equivalent")
+    
+    expect_equivalent(igpu[1:4,1:4], A[1:4,1:4],
+                      info = "row & column subsets of ivclMatrix not equivalent")
+    expect_equal(fgpu[1:4,1:4], D[1:4,1:4], tolerance = 1e-07,
+                 info = "row & column subsets of fvclMatrix not equivalent")
+    expect_equivalent(dgpu[1:4,1:4], D[1:4,1:4],
+                      info = "row & column subsets of dvclMatrix not equivalent")
 })
 
-test_that("vclMatrix set column access", {
+test_that("CPU vclMatrix set column access", {
     has_cpu_skip()
     
     gpuA <- vclMatrix(A)
@@ -74,9 +80,16 @@ test_that("vclMatrix set column access", {
                  info = "no error when index greater than dims")
     expect_error(gpuD[,1] <- rnorm(12),
                  info = "no error when vector larger than number of rows")
+    
+    expect_equivalent(gpuA[,1:4], A[,1:4],
+                      info = "column subsets of ivclMatrix not equivalent")
+    expect_equivalent(gpuD[,1:4], D[,1:4],
+                      info = "column subsets of fvclMatrix not equivalent")
+    expect_equal(gpuF[,1:4], D[,1:4], tolerance = 1e-07,
+                 info = "column subsets of dvclMatrix not equivalent")
 })
 
-test_that("vclMatrix set row access", {
+test_that("CPU vclMatrix set row access", {
     has_cpu_skip()
     
     gpuA <- vclMatrix(A)
@@ -112,9 +125,16 @@ test_that("vclMatrix set row access", {
                  info = "no error when index greater than dims")
     expect_error(gpuD[1,] <- rnorm(12),
                  info = "no error when vector larger than number of rows")
+    
+    expect_equivalent(gpuA[1:4,], A[1:4,],
+                      info = "row subsets of ivclMatrix not equivalent")
+    expect_equivalent(gpuD[1:4,], D[1:4,], 
+                      info = "row subsets of fvclMatrix not equivalent")
+    expect_equal(gpuF[1:4,], D[1:4,], tolerance = 1e-07,
+                 info = "row subsets of dvclMatrix not equivalent")
 })
 
-test_that("vclMatrix set element access", {
+test_that("CPU vclMatrix set element access", {
     has_cpu_skip()
     
     gpuA <- vclMatrix(A)
@@ -131,6 +151,10 @@ test_that("vclMatrix set element access", {
     
     A[1,3] <- int
     D[1,3] <- float
+    
+    D[c(6,10)] <- 0
+    gpuD[c(6,10)] <- 0
+    gpuF[c(6,10)] <- 0
     
     expect_equivalent(gpuD[1,3], float,
                       info = "updated dvclMatrix element not equivalent")
@@ -150,6 +174,100 @@ test_that("vclMatrix set element access", {
                  info = "no error when index greater than dims")
     expect_error(gpuD[1,3] <- rnorm(12),
                  info = "no error when assigned vector to element")
+    expect_equivalent(gpuD[c(6,10)], D[c(6,10)],
+                      info = "double non-contiguous subset not equivalent")
 })
 
-options(gpuR.default.device.type = "gpu")
+test_that("CPU vclMatrix as.matrix method", {
+    
+    has_cpu_skip()
+    
+    dgpu <- vclMatrix(D)
+    fgpu <- vclMatrix(D, type="float")
+    igpu <- vclMatrix(A)
+    
+    expect_equal(as.matrix(dgpu), D,
+                      info = "double as.matrix not equal")
+    expect_equal(as.matrix(fgpu), D,
+                      info = "float as.matrix not equal",
+                      tolerance = 1e-07)
+    expect_equal(as.matrix(dgpu), D,
+                      info = "integer as.matrix not equal")
+    
+    
+    expect_is(as.matrix(dgpu), 'matrix',
+              info = "double as.matrix not producing 'matrix' class")
+    expect_is(as.matrix(fgpu), 'matrix',
+              info = "float as.matrix not producing 'matrix' class")
+    expect_is(as.matrix(igpu), 'matrix',
+              info = "integer as.matrix not producing 'matrix' class")
+})
+
+test_that("CPU vclMatrix colnames methods", {
+    
+    has_cpu_skip()
+    
+    fgpu <- vclMatrix(D, type="float")
+    igpu <- vclMatrix(A)
+    
+    expect_null(colnames(fgpu), 
+                info = "float colnames should return NULL before assignment")
+    expect_null(colnames(igpu), 
+                info = "integer colnames should return NULL before assignment")
+    
+    colnames(fgpu) <- cnames
+    colnames(igpu) <- cnames
+    
+    expect_equal(colnames(fgpu), cnames,
+                 info = "float colnames don't reflect assigned names")
+    expect_equal(colnames(igpu), cnames,
+                 info = "integer colnames don't reflect assigned names")
+    
+    # Double tests
+    
+    dgpu <- vclMatrix(D)
+    
+    expect_null(colnames(dgpu), 
+                info = "double colnames should return NULL before assignment")
+    
+    colnames(dgpu) <- cnames
+    
+    expect_equal(colnames(dgpu), cnames,
+                 info = "double colnames don't reflect assigned names")
+})
+
+test_that("CPU vclMatrix set matrix access", {
+    
+    has_cpu_skip()
+    
+    gpuA <- vclMatrix(D)
+    gpuF <- vclMatrix(D, type = "float")
+    
+    gpuA[] <- D2
+    gpuF[] <- D2
+    
+    expect_equivalent(gpuA[], D2,
+                      info = "updated dvclMatrix not equivalent to assigned base matrix")
+    
+    expect_equal(gpuF[], D2, tolerance=1e-07,
+                 info = "updated fvclMatrix not equivalent to assigned base matrix")
+    
+})
+
+test_that("CPU vclMatrix set vclMatrix access", {
+    
+    has_cpu_skip()
+    
+    gpuA <- vclMatrix(D)
+    gpuD <- vclMatrix(D2)
+    gpuF <- vclMatrix(D, type = "float")
+    gpuDF <- vclMatrix(D2, type = "float")
+    
+    gpuA[] <- gpuD
+    gpuF[] <- gpuDF
+    
+    expect_equivalent(gpuA[], gpuD[], 
+                      info = "updated dvclMatrix not equivalent to assigned vclMatrix")
+    expect_equal(gpuF[], gpuDF[], tolerance=1e-07,
+                 info = "updated fvclMatrix not equivalent to assigned base vclMatrix")
+})

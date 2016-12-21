@@ -1,9 +1,6 @@
 library(gpuR)
 context("CPU gpuMatrix Distance Computations")
 
-# set option to use CPU instead of GPU
-options(gpuR.default.device.type = "cpu")
-
 # set seed
 set.seed(123)
 
@@ -50,7 +47,7 @@ sqpD <- pD^2
 lsqpD <- lpD^2
 rsqpD <- rpD^2
 
-test_that("CPU gpuMatrixSingle Precision Euclidean Distance",
+test_that("CPU gpuMatrix Single Precision Euclidean Distance",
 {
     
     has_cpu_skip()
@@ -64,7 +61,77 @@ test_that("CPU gpuMatrixSingle Precision Euclidean Distance",
                  check.attributes=FALSE)  
 })
 
-test_that("CPU gpuMatrixDouble Precision Euclidean Distance", 
+
+test_that("CPU gpuMatrix Single Precision Squared Euclidean Distance",
+          {
+              
+              has_cpu_skip()
+              
+              fgpuX <- gpuMatrix(A, type="float")
+              
+              E <- dist(fgpuX, method = "sqEuclidean")
+              
+              expect_equal(E[], sqD, tolerance=1e-06, 
+                           info="float squared euclidean distances not equivalent",
+                           check.attributes=FALSE)  
+          })
+
+
+test_that("CPU gpuMatrix Single Precision Pairwise Euclidean Distance",
+          {
+              
+              has_cpu_skip()
+              
+              fgpuA <- gpuMatrix(A, type="float")
+              fgpuB <- gpuMatrix(B, type="float")
+              fgpuC <- gpuMatrix(C, type="float")
+              fgpuG <- gpuMatrix(G, type="float")
+              
+              E <- distance(fgpuA, fgpuB)
+              lE <- distance(fgpuA, fgpuC)
+              rE <- distance(fgpuC, fgpuA)
+              
+              expect_equal(E[], pD, tolerance=1e-06, 
+                           info="float euclidean pairwise distances not equivalent",
+                           check.attributes=FALSE)  
+              expect_equal(lE[], lpD, tolerance=1e-06, 
+                           info="float euclidean pairwise distances not equivalent",
+                           check.attributes=FALSE)  
+              expect_equal(rE[], rpD, tolerance=1e-06, 
+                           info="float euclidean pairwise distances not equivalent",
+                           check.attributes=FALSE)  
+              expect_error(distance(fgpuA, fgpuG))
+          })
+
+
+test_that("CPU gpuMatrix Single Precision Pairwise Squared Euclidean Distance",
+          {
+              
+              has_cpu_skip()
+              
+              fgpuA <- gpuMatrix(A, type="float")
+              fgpuB <- gpuMatrix(B, type="float")
+              fgpuC <- gpuMatrix(C, type="float")
+              fgpuG <- gpuMatrix(G, type="float")
+              
+              E <- distance(fgpuA, fgpuB, method = "sqEuclidean")
+              lE <- distance(fgpuA, fgpuC, method = "sqEuclidean")
+              rE <- distance(fgpuC, fgpuA, method = "sqEuclidean")
+              
+              expect_equal(E[], sqpD, tolerance=1e-06, 
+                           info="float squared euclidean pairwise distances not equivalent",
+                           check.attributes=FALSE) 
+              expect_equal(lE[], lsqpD, tolerance=1e-06, 
+                           info="float squared euclidean pairwise distances not equivalent",
+                           check.attributes=FALSE) 
+              expect_equal(rE[], rsqpD, tolerance=1e-06, 
+                           info="float squared euclidean pairwise distances not equivalent",
+                           check.attributes=FALSE)  
+              expect_error(distance(fgpuA, fgpuG))
+          })
+
+
+test_that("CPU gpuMatrix Double Precision Euclidean Distance", 
 {
     
     has_cpu_skip()
@@ -78,21 +145,8 @@ test_that("CPU gpuMatrixDouble Precision Euclidean Distance",
                  check.attributes=FALSE) 
 })
 
-test_that("CPU gpuMatrixSingle Precision Squared Euclidean Distance",
-{
-    
-    has_cpu_skip()
-    
-    fgpuX <- gpuMatrix(A, type="float")
-    
-    E <- dist(fgpuX, method = "sqEuclidean")
-    
-    expect_equal(E[], sqD, tolerance=1e-06, 
-                 info="float squared euclidean distances not equivalent",
-                 check.attributes=FALSE)  
-})
 
-test_that("CPU gpuMatrixDouble Precision Squared Euclidean Distance", 
+test_that("CPU gpuMatrix Double Precision Squared Euclidean Distance", 
 {
     
     has_cpu_skip()
@@ -106,31 +160,6 @@ test_that("CPU gpuMatrixDouble Precision Squared Euclidean Distance",
                  check.attributes=FALSE) 
 })
 
-test_that("CPU gpuMatrix Single Precision Pairwise Euclidean Distance",
-{
-    
-    has_cpu_skip()
-    
-    fgpuA <- gpuMatrix(A, type="float")
-    fgpuB <- gpuMatrix(B, type="float")
-    fgpuC <- gpuMatrix(C, type="float")
-    fgpuG <- gpuMatrix(G, type="float")
-    
-    E <- distance(fgpuA, fgpuB)
-    lE <- distance(fgpuA, fgpuC)
-    rE <- distance(fgpuC, fgpuA)
-    
-    expect_equal(E[], pD, tolerance=1e-06, 
-                 info="float euclidean pairwise distances not equivalent",
-                 check.attributes=FALSE)  
-    expect_equal(lE[], lpD, tolerance=1e-06, 
-                 info="float euclidean pairwise distances not equivalent",
-                 check.attributes=FALSE)  
-    expect_equal(rE[], rpD, tolerance=1e-06, 
-                 info="float euclidean pairwise distances not equivalent",
-                 check.attributes=FALSE)  
-    expect_error(distance(fgpuA, fgpuG))
-})
 
 test_that("CPU gpuMatrix Double Precision Pairwise Euclidean Distance", 
 {
@@ -156,31 +185,6 @@ test_that("CPU gpuMatrix Double Precision Pairwise Euclidean Distance",
                  check.attributes=FALSE) 
 })
 
-test_that("CPU gpuMatrix Single Precision Pairwise Squared Euclidean Distance",
-{
-    
-    has_cpu_skip()
-    
-    fgpuA <- gpuMatrix(A, type="float")
-    fgpuB <- gpuMatrix(B, type="float")
-    fgpuC <- gpuMatrix(C, type="float")
-    fgpuG <- gpuMatrix(G, type="float")
-    
-    E <- distance(fgpuA, fgpuB, method = "sqEuclidean")
-    lE <- distance(fgpuA, fgpuC, method = "sqEuclidean")
-    rE <- distance(fgpuC, fgpuA, method = "sqEuclidean")
-    
-    expect_equal(E[], sqpD, tolerance=1e-06, 
-                 info="float squared euclidean pairwise distances not equivalent",
-                 check.attributes=FALSE) 
-    expect_equal(lE[], lsqpD, tolerance=1e-06, 
-                 info="float squared euclidean pairwise distances not equivalent",
-                 check.attributes=FALSE) 
-    expect_equal(rE[], rsqpD, tolerance=1e-06, 
-                 info="float squared euclidean pairwise distances not equivalent",
-                 check.attributes=FALSE)  
-    expect_error(distance(fgpuA, fgpuG))
-})
 
 test_that("CPU gpuMatrix Double Precision Pairwise Squared Euclidean Distance", 
 {
@@ -206,4 +210,107 @@ test_that("CPU gpuMatrix Double Precision Pairwise Squared Euclidean Distance",
                  check.attributes=FALSE) 
 })
 
-options(gpuR.default.device.type = "gpu")
+
+test_that("CPU gpuMatrix Integer Precision Euclidean Distance", 
+          {
+              
+              has_cpu_skip()
+              
+              fgpuX <- gpuMatrix(A, type="integer")
+              
+              expect_error(dist(fgpuX), "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              
+              # E <- dist(fgpuX)
+              
+              # expect_equal(E[], D, 
+              #              info="integer euclidean distances not equivalent",
+              #              check.attributes=FALSE) 
+          })
+
+
+test_that("CPU gpuMatrix Integer Precision Squared Euclidean Distance", 
+          {
+              
+              has_cpu_skip()
+              
+              fgpuX <- gpuMatrix(A, type="integer")
+              
+              expect_error(dist(fgpuX, method = "sqEuclidean"), 
+                           "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              
+              # E <- dist(fgpuX, method = "sqEuclidean")
+              # 
+              # expect_equal(E[], sqD, 
+              #              info="integer squared euclidean distances not equivalent",
+              #              check.attributes=FALSE) 
+          })
+
+
+test_that("CPU gpuMatrix Integer Precision Pairwise Euclidean Distance", 
+          {
+              
+              has_cpu_skip()
+              
+              fgpuA <- gpuMatrix(A, type="integer")
+              fgpuB <- gpuMatrix(B, type="integer")
+              fgpuC <- gpuMatrix(C, type="integer")
+              
+              
+              expect_error(distance(fgpuA, fgpuB), "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              expect_error(distance(fgpuA, fgpuC), "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              expect_error(distance(fgpuC, fgpuA), "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              
+              # E <- distance(fgpuA, fgpuB)
+              # lE <- distance(fgpuA, fgpuC)
+              # rE <- distance(fgpuC, fgpuA)
+              # 
+              # expect_equal(E[], pD,
+              #              info="integer euclidean pairwise distances not equivalent",
+              #              check.attributes=FALSE) 
+              # expect_equal(lE[], lpD,
+              #              info="integer euclidean pairwise distances not equivalent",
+              #              check.attributes=FALSE) 
+              # expect_equal(rE[], rpD,
+              #              info="integer euclidean pairwise distances not equivalent",
+              #              check.attributes=FALSE) 
+          })
+
+
+test_that("CPU gpuMatrix Integer Precision Pairwise Squared Euclidean Distance", 
+          {
+              
+              has_cpu_skip()
+              
+              fgpuA <- gpuMatrix(A, type="integer")
+              fgpuB <- gpuMatrix(B, type="integer")
+              fgpuC <- gpuMatrix(C, type="integer")
+              
+              expect_error(distance(fgpuA, fgpuB, method = "sqEuclidean"), 
+                           "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              expect_error(distance(fgpuA, fgpuC, method = "sqEuclidean"), 
+                           "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              expect_error(distance(fgpuC, fgpuA, method = "sqEuclidean"), 
+                           "integer method not currently implemented",
+                           info = "dist shouldn't accept integer types")
+              
+              # E <- distance(fgpuA, fgpuB, method = "sqEuclidean")
+              # lE <- distance(fgpuA, fgpuC, method = "sqEuclidean")
+              # rE <- distance(fgpuC, fgpuA, method = "sqEuclidean")
+              # 
+              # expect_equal(E[], sqpD, 
+              #              info="integer squared euclidean pairwise distances not equivalent",
+              #              check.attributes=FALSE) 
+              # expect_equal(lE[], lsqpD, 
+              #              info="integer squared euclidean pairwise distances not equivalent",
+              #              check.attributes=FALSE) 
+              # expect_equal(rE[], rsqpD,
+              #              info="integer squared euclidean pairwise distances not equivalent",
+              #              check.attributes=FALSE) 
+          })

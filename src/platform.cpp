@@ -1,8 +1,6 @@
 
 #include "gpuR/windows_check.hpp"
-#include <boost/algorithm/string.hpp>
-
-#include "gpuR/cl_helpers.hpp"
+#include "gpuR/utils.hpp"
 
 // Use OpenCL with ViennaCL
 #define VIENNACL_WITH_OPENCL 1
@@ -13,8 +11,9 @@
 
 #include <Rcpp.h>
 
-using namespace cl;
 using namespace Rcpp;
+
+typedef std::vector< viennacl::ocl::platform > platforms_type;
 
 //' @title Detect Number of Platforms
 //' @description Find out how many OpenCL enabled platforms are available.
@@ -24,7 +23,6 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 SEXP detectPlatforms()
 {
-    typedef std::vector< viennacl::ocl::platform > platforms_type;
     platforms_type platforms = viennacl::ocl::get_platforms();
     
     return wrap(platforms.size());
@@ -63,7 +61,6 @@ SEXP currentPlatform()
     int plat_idx = viennacl::ocl::current_context().platform_index();
     
     // get platforms
-    typedef std::vector< viennacl::ocl::platform > platforms_type;
     platforms_type platforms = viennacl::ocl::get_platforms();
     
 //    return wrap(plat_idx + 1);
@@ -89,31 +86,61 @@ SEXP currentPlatform()
 // [[Rcpp::export]]
 List cpp_platformInfo(SEXP platform_idx_)
 {
+    cl_int err;
+    
+    // get platforms
+    platforms_type platforms = viennacl::ocl::get_platforms();
     
     // subtract one for zero indexing
     unsigned int platform_idx = as<unsigned int>(platform_idx_) - 1;
+    
+    viennacl::ocl::platform vcl_platform = platforms[platform_idx];
+    
+    cl_platform_id platform_id = vcl_platform.id();
+    
+    char platformName[1024];
+    char platformVendor[1024];
+    char platformVersion[1024];
+    char platformExtensions[2048];
+        
+    err = clGetPlatformInfo(platform_id, 
+                            CL_PLATFORM_NAME,
+                            sizeof(platformName),
+                            platformName,
+                            NULL
+    );
+    err = clGetPlatformInfo(platform_id, 
+                            CL_PLATFORM_VENDOR,
+                            sizeof(platformName),
+                            platformVendor,
+                            NULL
+    );
+    err = clGetPlatformInfo(platform_id, 
+                            CL_PLATFORM_VERSION,
+                            sizeof(platformName),
+                            platformVersion,
+                            NULL
+    );
+    err = clGetPlatformInfo(platform_id, 
+                            CL_PLATFORM_EXTENSIONS,
+                            sizeof(platformName),
+                            platformExtensions,
+                            NULL
+    );
+    
+    // Convert char arrays to string
+    std::string platformNameStr(platformName);
+    std::string platformVendorStr(platformVendor);
+    std::string platformVersionStr(platformVersion);
 
-    // Discover number of platforms
-    std::vector<cl::Platform> platforms;
-    getPlatforms(platforms); // cl_helpers.hpp
-    
-    if(platforms.size() == 0){
-        stop("No platforms found! Check OpenCL installation");
-    }
-    
-    Platform plat = platforms[platform_idx];
-    
-    std::string platformName = plat.getInfo<CL_PLATFORM_NAME>();
-    std::string platformVendor = plat.getInfo<CL_PLATFORM_VENDOR>();
-    std::string platformVersion = plat.getInfo<CL_PLATFORM_VERSION>();
-    std::string platformExtensions = plat.getInfo<CL_PLATFORM_EXTENSIONS>();
-    
+    // Split extensions to a vector
     std::vector<std::string> extensionsVector;
-    boost::split(extensionsVector, platformExtensions, boost::is_any_of(" "));
+    std::string platformExtensionsStr(platformExtensions);
+    extensionsVector = split(platformExtensionsStr, ' ');
 
-    return List::create(Named("platformName") = platformName,
-                        Named("platformVendor") = platformVendor,
-                        Named("platformVersion") = platformVersion,
+    return List::create(Named("platformName") = platformNameStr,
+                        Named("platformVendor") = platformVendorStr,
+                        Named("platformVersion") = platformVersionStr,
                         Named("platformExtensions") = extensionsVector
                         );
 }

@@ -9,30 +9,20 @@ A <- rnorm(ORDER)
 B <- rnorm(ORDER)
 E <- rnorm(ORDER-1)
 
-test_that("gpuVector comparison operator", {
-    has_gpu_skip()
-    
-    gpuA <- gpuVector(A)
-    
-    expect_true(all(A == gpuA), 
-                info = "vector/gpuVector== operator not working correctly")
-    expect_true(all(gpuA == A), 
-                info = "gpuVector/vector == operator not working correctly")
-})
 
 test_that("gpuVector integer additon", {
-    
+
     has_gpu_skip()
-    
+
     gpuA <- gpuVector(Aint)
     gpuB <- gpuVector(Bint)
-    
+
     # R default
     C <- Aint + Bint
-    
+
     # manual call
     #gpuC <- gpu_vec_add(A, B)
-    
+
     # generic call
     gpuC <- gpuA + gpuB
 
@@ -42,18 +32,18 @@ test_that("gpuVector integer additon", {
 })
 
 test_that("gpuVector integer subtraction", {
-    
+
     has_gpu_skip()
-    
+
     gpuA <- gpuVector(Aint)
     gpuB <- gpuVector(Bint)
-    
+
     # R default
     C <- Aint - Bint
-    
+
     # generic call
     gpuC <- gpuA - gpuB
-    
+
     expect_equivalent(gpuC[], C)
     expect_is(gpuC, "gpuVector", "following vector subtraction")
     expect_is(gpuC, "igpuVector", "following vector subtraction")
@@ -246,7 +236,7 @@ test_that("gpuVector Single Precision Vector Element-Wise Power", {
     fvclC <- fvclA ^ fvclB
     
     expect_is(fvclC, "fgpuVector")
-    expect_equal(fvclC[,], C, tolerance=1e-07, 
+    expect_equal(fvclC[,], C, tolerance=1e-06, 
                  info="float vcl vector elements not equivalent")  
     expect_error(fvclA * fvclE)
 })
@@ -300,6 +290,18 @@ test_that("gpuVector Single precision outer product", {
     expect_equal(gpuC[], C, tolerance=1e-06, 
                  info="float vector outer product elements not equivalent")
 })
+
+# doesn't quite work with precision
+# test_that("gpuVector Single precision comparison operator", {
+#     has_gpu_skip()
+#     
+#     gpuA <- gpuVector(A, type = "float")
+#     
+#     expect_true(all(A == gpuA), 
+#                 info = "vector/gpuVector== operator not working correctly")
+#     expect_true(all(gpuA == A), 
+#                 info = "gpuVector/vector == operator not working correctly")
+# })
 
 # Double Precision Tests
 
@@ -535,7 +537,7 @@ test_that("gpuVector Double precision inner product", {
                  info="double vector inner product elements not equivalent")
 })
 
-test_that("gpuVector double precision outer product", {
+test_that("gpuVector Double precision outer product", {
     
     has_gpu_skip()
     has_double_skip()
@@ -551,3 +553,14 @@ test_that("gpuVector double precision outer product", {
                  info="double vector outer product elements not equivalent")
 })
 
+test_that("gpuVector Double precision comparison operator", {
+    has_gpu_skip()
+    has_double_skip()
+    
+    gpuA <- gpuVector(A)
+    
+    expect_true(all(A == gpuA), 
+                info = "vector/gpuVector== operator not working correctly")
+    expect_true(all(gpuA == A), 
+                info = "gpuVector/vector == operator not working correctly")
+})

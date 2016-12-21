@@ -35,20 +35,9 @@ template <typename T>
 void cpp_gpuVector_axpy(
     SEXP alpha_, 
     SEXP A_, SEXP B_,
-    int device_flag)
+    int ctx_id)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     const T alpha = as<T>(alpha_);
 
@@ -60,35 +49,28 @@ void cpp_gpuVector_axpy(
     
     int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_B(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_B(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
-    viennacl::copy(Bm, vcl_B); 
+    // viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Bm, vcl_B); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
+    viennacl::fast_copy(Bm.data(), Bm.data() + Bm.size(), vcl_B.begin());
     
     vcl_B += alpha * vcl_A;
     
-    viennacl::copy(vcl_B, Bm);
+    // viennacl::copy(vcl_B, Bm);
+    viennacl::fast_copy(vcl_B.begin(), vcl_B.end(), &(Bm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_unary_axpy(
-    SEXP ptrA_, 
-    int device_flag)
+    SEXP ptrA_,
+    int ctx_id)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
 
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     
@@ -96,35 +78,30 @@ cpp_gpuVector_unary_axpy(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_Z = viennacl::zero_vector<T>(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    // viennacl::vector<T> vcl_Z = viennacl::zero_vector<T>(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_Z = viennacl::vector_base<T>(M, ctx = ctx);
+    viennacl::linalg::vector_assign(vcl_Z, (T)(0));
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::vector_base<T> vcl_Z = static_cast<viennacl::vector_base<T> >(vcl_Z);
+    
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_Z -= vcl_A;
-
-    viennacl::copy(vcl_Z, Am);
+    
+    // viennacl::copy(vcl_Z, Am);
+    viennacl::fast_copy(vcl_Z.begin(), vcl_Z.end(), &(Am[0]));
 }
 
 
 template <typename T>
 T cpp_gpuVector_inner_prod(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    SEXP ptrB_,
+    int ctx_id)
+{   
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     T C;    
     
@@ -136,11 +113,14 @@ T cpp_gpuVector_inner_prod(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_B(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_B(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
-    viennacl::copy(Bm, vcl_B); 
+    // viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Bm, vcl_B); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
+    viennacl::fast_copy(Bm.data(), Bm.data() + Bm.size(), vcl_B.begin());
     
     C = viennacl::linalg::inner_prod(vcl_A, vcl_B);
     
@@ -152,25 +132,12 @@ void cpp_gpuVector_outer_prod(
     SEXP ptrA_, 
     SEXP ptrB_, 
     SEXP ptrC_,
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    XPtr<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > ptrC(ptrC_);
+    int ctx_id)
+{   
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrC(ptrC_);
-    Eigen::Ref<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > refC = ptrC->data();
+    // Eigen::Ref<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > refC = ptrC->data();
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrB(ptrB_);
@@ -178,20 +145,26 @@ void cpp_gpuVector_outer_prod(
     Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > Am = ptrA->data();
     Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > Bm = ptrB->data();
 //    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > Cm(ptrC->data(), ptrC->rows(), ptrC->cols());
-    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > Cm(refC.data(), ptrC->nrow(), ptrC->ncol());
+    // Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> > Cm(refC.data(), ptrC->nrow(), ptrC->ncol());
+    
+    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::OuterStride<> > Cm = ptrC->data();
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_B(M);
-    viennacl::matrix<T> vcl_C(M, M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_B(M, ctx = ctx);
+    viennacl::matrix<T> vcl_C(M, M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
-    viennacl::copy(Bm, vcl_B); 
+    // viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Bm, vcl_B); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
+    viennacl::fast_copy(Bm.data(), Bm.data() + Bm.size(), vcl_B.begin());
     
     vcl_C = viennacl::linalg::outer_prod(vcl_A, vcl_B);
     
     viennacl::copy(vcl_C, Cm);
+    // viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
@@ -199,20 +172,9 @@ void cpp_gpuVector_elem_prod(
     SEXP ptrA_, 
     SEXP ptrB_, 
     SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
 
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrB(ptrB_);
@@ -224,39 +186,32 @@ void cpp_gpuVector_elem_prod(
     
     int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_B(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_B(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
-    viennacl::copy(Bm, vcl_B); 
+    // viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Bm, vcl_B); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
+    viennacl::fast_copy(Bm.data(), Bm.data() + Bm.size(), vcl_B.begin());
     
     vcl_C = viennacl::linalg::element_prod(vcl_A, vcl_B);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_scalar_prod(
     SEXP ptrC_, 
-    SEXP scalar, 
-    int device_flag)
+    SEXP scalar,
+    int ctx_id)
 {        
     const T alpha = as<T>(scalar);
     
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
     
@@ -264,13 +219,15 @@ cpp_gpuVector_scalar_prod(
     
     int M = Cm.size();
     
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Cm, vcl_C); 
+    // viennacl::copy(Cm, vcl_C); 
+    viennacl::fast_copy(Cm.data(), Cm.data() + Cm.size(), vcl_C.begin());
     
     vcl_C *= alpha;
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
@@ -278,21 +235,10 @@ void cpp_gpuVector_elem_div(
     SEXP ptrA_, 
     SEXP ptrB_, 
     SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }   
-
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
+    
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrB(ptrB_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -303,16 +249,20 @@ void cpp_gpuVector_elem_div(
     
     int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_B(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_B(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
-    viennacl::copy(Bm, vcl_B); 
+    // viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Bm, vcl_B); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
+    viennacl::fast_copy(Bm.data(), Bm.data() + Bm.size(), vcl_B.begin());
     
     vcl_C = viennacl::linalg::element_div(vcl_A, vcl_B);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
@@ -321,22 +271,11 @@ cpp_gpuVector_scalar_div(
     SEXP ptrC_, 
     SEXP scalar, 
     const int order,
-    int device_flag)
+    int ctx_id)
 {        
     const T alpha = as<T>(scalar);
     
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
     
@@ -344,17 +283,25 @@ cpp_gpuVector_scalar_div(
     
     int M = Cm.size();
     
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Cm, vcl_C); 
+    // viennacl::copy(Cm, vcl_C); 
+    
+    viennacl::fast_copy(Cm.data(), Cm.data() + Cm.size(), vcl_C.begin());
     
     if(order == 0){
         vcl_C /= alpha;
-        viennacl::copy(vcl_C, Cm);
+        // viennacl::copy(vcl_C, Cm);
+        viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
     }else{
-        viennacl::vector<T> vcl_scalar = viennacl::scalar_vector<T>(M, alpha);
+        // viennacl::vector_base<T> vcl_scalar = static_cast<viennacl::vector_base<T> >(viennacl::scalar_vector<T>(M, alpha, ctx = ctx));
+        
+        viennacl::vector_base<T> vcl_scalar = viennacl::vector_base<T>(M, ctx = ctx);
+        viennacl::linalg::vector_assign(vcl_scalar, alpha);
+        
         vcl_scalar = viennacl::linalg::element_div(vcl_scalar, vcl_C);
-        viennacl::copy(vcl_scalar, Cm);
+        // viennacl::copy(vcl_scalar, Cm);
+        viennacl::fast_copy(vcl_scalar.begin(), vcl_scalar.end(), &(Cm[0]));
     }
 }
 
@@ -363,20 +310,9 @@ void cpp_gpuVector_elem_pow(
     SEXP ptrA_, 
     SEXP ptrB_, 
     SEXP ptrC_,
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    } 
+    int ctx_id)
+{   
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrB(ptrB_);
@@ -388,16 +324,20 @@ void cpp_gpuVector_elem_pow(
     
     int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_B(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_B(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
-    viennacl::copy(Bm, vcl_B); 
+    // viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Bm, vcl_B); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
+    viennacl::fast_copy(Bm.data(), Bm.data() + Bm.size(), vcl_B.begin());
     
     vcl_C = viennacl::linalg::element_pow(vcl_A, vcl_B);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
@@ -406,20 +346,9 @@ void cpp_gpuVector_scalar_pow(
     SEXP scalar_, 
     SEXP ptrC_,
     const int order,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     const T scalar = as<T>(scalar_);    
     
@@ -431,11 +360,16 @@ void cpp_gpuVector_scalar_pow(
     
     int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
-    viennacl::vector<T> vcl_B = viennacl::scalar_vector<T>(M, scalar);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
+    // viennacl::vector_base<T> vcl_B = static_cast<viennacl::vector_base<T> >(viennacl::scalar_vector<T>(M, scalar, ctx = ctx));
     
-    viennacl::copy(Am, vcl_A); 
+    viennacl::vector_base<T> vcl_B = viennacl::vector_base<T>(M, ctx = ctx);
+    viennacl::linalg::vector_assign(vcl_B, scalar);
+    
+    // viennacl::copy(Am, vcl_A); 
+    
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     if(order == 0){
         vcl_C = viennacl::linalg::element_pow(vcl_A, vcl_B);
@@ -443,27 +377,17 @@ void cpp_gpuVector_scalar_pow(
         vcl_C = viennacl::linalg::element_pow(vcl_B, vcl_A);
     }
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_sin(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -473,34 +397,25 @@ cpp_gpuVector_elem_sin(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_sin(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_asin(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -510,34 +425,25 @@ cpp_gpuVector_elem_asin(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_asin(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_sinh(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -547,34 +453,25 @@ cpp_gpuVector_elem_sinh(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_sinh(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_cos(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
 
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -584,34 +481,25 @@ cpp_gpuVector_elem_cos(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_cos(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_acos(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
 
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -621,34 +509,25 @@ cpp_gpuVector_elem_acos(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_acos(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_cosh(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -656,34 +535,25 @@ cpp_gpuVector_elem_cosh(
     Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > Am = ptrA->data();
     Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1> > Cm = ptrC->data();const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_cosh(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_tan(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -693,34 +563,25 @@ cpp_gpuVector_elem_tan(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_tan(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_atan(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -730,34 +591,25 @@ cpp_gpuVector_elem_atan(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_atan(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_tanh(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -767,34 +619,25 @@ cpp_gpuVector_elem_tanh(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_tanh(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_exp(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
 
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -804,34 +647,25 @@ cpp_gpuVector_elem_exp(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_exp(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_log10(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -841,34 +675,25 @@ cpp_gpuVector_elem_log10(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_log10(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_log(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -878,14 +703,16 @@ cpp_gpuVector_elem_log(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_log(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
@@ -893,20 +720,9 @@ void
 cpp_gpuVector_elem_log_base(
     SEXP ptrA_, SEXP ptrC_,
     T base,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -916,35 +732,26 @@ cpp_gpuVector_elem_log_base(
     
     int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_log10(vcl_A);
     vcl_C /= log10(base);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 void 
 cpp_gpuVector_elem_abs(
     SEXP ptrA_, SEXP ptrC_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
 
     XPtr<dynEigenVec<T> > ptrA(ptrA_);
     XPtr<dynEigenVec<T> > ptrC(ptrC_);
@@ -954,34 +761,25 @@ cpp_gpuVector_elem_abs(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
-    viennacl::vector<T> vcl_C(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
+    viennacl::vector_base<T> vcl_C(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     vcl_C = viennacl::linalg::element_fabs(vcl_A);
     
-    viennacl::copy(vcl_C, Cm);
+    // viennacl::copy(vcl_C, Cm);
+    viennacl::fast_copy(vcl_C.begin(), vcl_C.end(), &(Cm[0]));
 }
 
 template <typename T>
 T
 cpp_gpuVector_max(
     SEXP ptrA_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     T max;
     
@@ -991,9 +789,10 @@ cpp_gpuVector_max(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     max = viennacl::linalg::max(vcl_A);
     
@@ -1004,20 +803,9 @@ template <typename T>
 T
 cpp_gpuVector_min(
     SEXP ptrA_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     T max;
 
@@ -1027,9 +815,10 @@ cpp_gpuVector_min(
     
     const int M = Am.size();
     
-    viennacl::vector<T> vcl_A(M);
+    viennacl::vector_base<T> vcl_A(M, ctx = ctx);
     
-    viennacl::copy(Am, vcl_A); 
+    // viennacl::copy(Am, vcl_A); 
+    viennacl::fast_copy(Am.data(), Am.data() + Am.size(), vcl_A.begin());
     
     max = viennacl::linalg::min(vcl_A);
     
@@ -1044,28 +833,15 @@ cpp_gpuMatrix_axpy(
     SEXP alpha_, 
     SEXP ptrA_, 
     SEXP ptrB_,
-    int device_flag)
+    int ctx_id)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     const T alpha = as<T>(alpha_);
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B = ptrB->device_data();
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B = ptrB->device_data(ctx_id);
     
     vcl_B += alpha * vcl_A;
 
@@ -1075,29 +851,18 @@ cpp_gpuMatrix_axpy(
 template <typename T>
 void 
 cpp_gpuMatrix_unary_axpy(
-    SEXP ptrA_, 
-    int device_flag)
+    SEXP ptrA_,
+    int ctx_id)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     
     const int M = ptrA->nrow();
     const int K = ptrA->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_Z = viennacl::zero_matrix<T>(M,K);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_Z = viennacl::zero_matrix<T>(M,K, ctx);
     
     vcl_Z -= vcl_A;
 
@@ -1109,21 +874,10 @@ void
 cpp_gpuMatrix_elem_prod(
     SEXP ptrA_, 
     SEXP ptrB_, 
-    SEXP ptrC_, 
-    int device_flag)
+    SEXP ptrC_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }   
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1132,9 +886,9 @@ cpp_gpuMatrix_elem_prod(
     const int K = ptrC->nrow();
     const int M = ptrC->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B = ptrB->device_data();
-    viennacl::matrix<T> vcl_C(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B = ptrB->device_data(ctx_id);
+    viennacl::matrix<T> vcl_C(K,M, ctx = ctx);
     
     vcl_C = viennacl::linalg::element_prod(vcl_A, vcl_B);
     
@@ -1145,27 +899,14 @@ template <typename T>
 void 
 cpp_gpuMatrix_scalar_prod(
     SEXP ptrC_, 
-    SEXP scalar, 
-    int device_flag)
+    SEXP scalar,
+    int ctx_id)
 {        
     const T alpha = as<T>(scalar);
-    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
 
     XPtr<dynEigenMat<T> > ptrC(ptrC_);
     
-    viennacl::matrix<T> vcl_C = ptrC->device_data();
+    viennacl::matrix<T> vcl_C = ptrC->device_data(ctx_id);
     
     vcl_C *= alpha;
     
@@ -1177,21 +918,10 @@ void
 cpp_gpuMatrix_elem_div(
     SEXP ptrA_, 
     SEXP ptrB_, 
-    SEXP ptrC_, 
-    int device_flag)
+    SEXP ptrC_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1200,9 +930,9 @@ cpp_gpuMatrix_elem_div(
     const int K = ptrC->nrow();
     const int M = ptrC->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B = ptrB->device_data();
-    viennacl::matrix<T> vcl_C(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B = ptrB->device_data(ctx_id);
+    viennacl::matrix<T> vcl_C(K,M, ctx = ctx);
     
     vcl_C = viennacl::linalg::element_div(vcl_A, vcl_B);
     
@@ -1213,27 +943,14 @@ template <typename T>
 void 
 cpp_gpuMatrix_scalar_div(
     SEXP ptrC_, 
-    SEXP B_scalar, 
-    int device_flag)
+    SEXP B_scalar,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     T B = Rcpp::as<T>(B_scalar);
     
     XPtr<dynEigenMat<T> > ptrC(ptrC_);
     
-    viennacl::matrix<T> vcl_C = ptrC->device_data();
+    viennacl::matrix<T> vcl_C = ptrC->device_data(ctx_id);
     
     vcl_C /= B;
     
@@ -1245,21 +962,10 @@ void
 cpp_gpuMatrix_elem_pow(
     SEXP ptrA_, 
     SEXP ptrB_, 
-    SEXP ptrC_, 
-    int device_flag)
+    SEXP ptrC_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1268,9 +974,9 @@ cpp_gpuMatrix_elem_pow(
     const int K = ptrC->nrow();
     const int M = ptrC->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B = ptrB->device_data();
-    viennacl::matrix<T> vcl_C(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B = ptrB->device_data(ctx_id);
+    viennacl::matrix<T> vcl_C(K,M, ctx = ctx);
     
     vcl_C = viennacl::linalg::element_pow(vcl_A, vcl_B);
     
@@ -1282,24 +988,12 @@ void
 cpp_gpuMatrix_scalar_pow(
     SEXP ptrA_, 
     SEXP scalar_, 
-    SEXP ptrC_, 
-    int device_flag)
+    SEXP ptrC_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     const T scalar = as<T>(scalar_);    
-    
         
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrC(ptrC_);
@@ -1307,12 +1001,17 @@ cpp_gpuMatrix_scalar_pow(
     const int K = ptrC->nrow();
     const int M = ptrC->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_C(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_C(K,M, ctx = ctx);
     
-    viennacl::matrix<T> vcl_B = viennacl::scalar_matrix<T>(K,M,scalar);
+    viennacl::matrix<T> vcl_B = viennacl::scalar_matrix<T>(K,M,scalar, ctx = ctx);
+    
+    // std::cout << vcl_A << std::endl;
+    // std::cout << vcl_B << std::endl;
     
     vcl_C = viennacl::linalg::element_pow(vcl_A, vcl_B);
+    
+    // std::cout << vcl_C << std::endl;
     
     ptrC->to_host(vcl_C);
 }
@@ -1320,21 +1019,10 @@ cpp_gpuMatrix_scalar_pow(
 template <typename T>
 void cpp_gpuMatrix_elem_sin(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);    
@@ -1342,8 +1030,8 @@ void cpp_gpuMatrix_elem_sin(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_sin(vcl_A);
     
@@ -1353,21 +1041,10 @@ void cpp_gpuMatrix_elem_sin(
 template <typename T>
 void cpp_gpuMatrix_elem_asin(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1375,8 +1052,8 @@ void cpp_gpuMatrix_elem_asin(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_asin(vcl_A);
     
@@ -1387,21 +1064,10 @@ void cpp_gpuMatrix_elem_asin(
 template <typename T>
 void cpp_gpuMatrix_elem_sinh(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1409,8 +1075,8 @@ void cpp_gpuMatrix_elem_sinh(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_sinh(vcl_A);
     
@@ -1421,21 +1087,10 @@ void cpp_gpuMatrix_elem_sinh(
 template <typename T>
 void cpp_gpuMatrix_elem_cos(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1443,8 +1098,8 @@ void cpp_gpuMatrix_elem_cos(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_cos(vcl_A);
     
@@ -1454,21 +1109,10 @@ void cpp_gpuMatrix_elem_cos(
 template <typename T>
 void cpp_gpuMatrix_elem_acos(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1476,8 +1120,8 @@ void cpp_gpuMatrix_elem_acos(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_acos(vcl_A);
     
@@ -1488,21 +1132,10 @@ void cpp_gpuMatrix_elem_acos(
 template <typename T>
 void cpp_gpuMatrix_elem_cosh(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1510,8 +1143,8 @@ void cpp_gpuMatrix_elem_cosh(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_cosh(vcl_A);
     
@@ -1522,21 +1155,10 @@ void cpp_gpuMatrix_elem_cosh(
 template <typename T>
 void cpp_gpuMatrix_elem_tan(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1544,8 +1166,8 @@ void cpp_gpuMatrix_elem_tan(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_tan(vcl_A);
     
@@ -1555,21 +1177,10 @@ void cpp_gpuMatrix_elem_tan(
 template <typename T>
 void cpp_gpuMatrix_elem_atan(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1577,8 +1188,8 @@ void cpp_gpuMatrix_elem_atan(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_atan(vcl_A);
     
@@ -1589,21 +1200,10 @@ void cpp_gpuMatrix_elem_atan(
 template <typename T>
 void cpp_gpuMatrix_elem_tanh(
     SEXP ptrA_, 
-    SEXP ptrB_, 
-    int device_flag)
+    SEXP ptrB_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1611,8 +1211,8 @@ void cpp_gpuMatrix_elem_tanh(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_tanh(vcl_A);
     
@@ -1622,20 +1222,9 @@ void cpp_gpuMatrix_elem_tanh(
 template <typename T>
 void cpp_gpuMatrix_elem_log(
     SEXP ptrA_, SEXP ptrB_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1643,8 +1232,8 @@ void cpp_gpuMatrix_elem_log(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_log(vcl_A);
     
@@ -1655,20 +1244,9 @@ template <typename T>
 void cpp_gpuMatrix_elem_log_base(
     SEXP ptrA_, SEXP ptrB_,
     T base,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1676,8 +1254,8 @@ void cpp_gpuMatrix_elem_log_base(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_log10(vcl_A);
     vcl_B /= log10(base);
@@ -1688,20 +1266,9 @@ void cpp_gpuMatrix_elem_log_base(
 template <typename T>
 void cpp_gpuMatrix_elem_log10(
     SEXP ptrA_, SEXP ptrB_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1709,8 +1276,8 @@ void cpp_gpuMatrix_elem_log10(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_log10(vcl_A);
     
@@ -1720,20 +1287,9 @@ void cpp_gpuMatrix_elem_log10(
 template <typename T>
 void cpp_gpuMatrix_elem_exp(
     SEXP ptrA_, SEXP ptrB_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1741,8 +1297,8 @@ void cpp_gpuMatrix_elem_exp(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_exp(vcl_A);
     
@@ -1752,20 +1308,9 @@ void cpp_gpuMatrix_elem_exp(
 template <typename T>
 void cpp_gpuMatrix_elem_abs(
     SEXP ptrA_, SEXP ptrB_,
-    int device_flag)
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     XPtr<dynEigenMat<T> > ptrA(ptrA_);
     XPtr<dynEigenMat<T> > ptrB(ptrB_);
@@ -1773,8 +1318,8 @@ void cpp_gpuMatrix_elem_abs(
     const int K = ptrB->nrow();
     const int M = ptrB->ncol();
     
-    viennacl::matrix<T> vcl_A = ptrA->device_data();
-    viennacl::matrix<T> vcl_B(K,M);
+    viennacl::matrix<T> vcl_A = ptrA->device_data(ctx_id);
+    viennacl::matrix<T> vcl_B(K,M, ctx = ctx);
     
     vcl_B = viennacl::linalg::element_fabs(vcl_A);
     
@@ -1787,19 +1332,19 @@ void cpp_gpuMatrix_elem_abs(
 void
 cpp_gpuMatrix_elem_prod(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_prod<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_prod<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_prod<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_prod<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_prod<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_prod<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1811,18 +1356,18 @@ void
 cpp_gpuMatrix_scalar_prod(
     SEXP ptrC,
     SEXP scalar,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {    
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_scalar_prod<int>(ptrC, scalar, device_flag);
+            cpp_gpuMatrix_scalar_prod<int>(ptrC, scalar, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_scalar_prod<float>(ptrC, scalar, device_flag);
+            cpp_gpuMatrix_scalar_prod<float>(ptrC, scalar, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_scalar_prod<double>(ptrC, scalar, device_flag);
+            cpp_gpuMatrix_scalar_prod<double>(ptrC, scalar, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1834,19 +1379,19 @@ void
 cpp_gpuMatrix_scalar_div(
     SEXP ptrC,
     SEXP B_scalar,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_scalar_div<int>(ptrC, B_scalar, device_flag);
+            cpp_gpuMatrix_scalar_div<int>(ptrC, B_scalar, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_scalar_div<float>(ptrC, B_scalar, device_flag);
+            cpp_gpuMatrix_scalar_div<float>(ptrC, B_scalar, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_scalar_div<double>(ptrC, B_scalar, device_flag);
+            cpp_gpuMatrix_scalar_div<double>(ptrC, B_scalar, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1857,19 +1402,19 @@ cpp_gpuMatrix_scalar_div(
 void
 cpp_gpuMatrix_elem_div(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_div<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_div<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_div<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_div<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_div<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_div<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1880,19 +1425,19 @@ cpp_gpuMatrix_elem_div(
 void
 cpp_gpuMatrix_elem_pow(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_pow<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_pow<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_pow<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_pow<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_pow<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuMatrix_elem_pow<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1903,19 +1448,19 @@ cpp_gpuMatrix_elem_pow(
 void
 cpp_gpuMatrix_scalar_pow(
     SEXP ptrA, SEXP scalar, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_scalar_pow<int>(ptrA, scalar, ptrC, device_flag);
+            cpp_gpuMatrix_scalar_pow<int>(ptrA, scalar, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_scalar_pow<float>(ptrA, scalar, ptrC, device_flag);
+            cpp_gpuMatrix_scalar_pow<float>(ptrA, scalar, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_scalar_pow<double>(ptrA, scalar, ptrC, device_flag);
+            cpp_gpuMatrix_scalar_pow<double>(ptrA, scalar, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1926,19 +1471,19 @@ cpp_gpuMatrix_scalar_pow(
 void
 cpp_gpuMatrix_elem_sin(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_sin<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_sin<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_sin<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_sin<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_sin<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_sin<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1949,19 +1494,19 @@ cpp_gpuMatrix_elem_sin(
 void
 cpp_gpuMatrix_elem_asin(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_asin<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_asin<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_asin<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_asin<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_asin<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_asin<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1972,19 +1517,19 @@ cpp_gpuMatrix_elem_asin(
 void
 cpp_gpuMatrix_elem_sinh(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_sinh<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_sinh<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_sinh<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_sinh<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_sinh<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_sinh<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -1995,19 +1540,19 @@ cpp_gpuMatrix_elem_sinh(
 void
 cpp_gpuMatrix_elem_cos(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_cos<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_cos<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_cos<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_cos<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_cos<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_cos<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2018,19 +1563,19 @@ cpp_gpuMatrix_elem_cos(
 void
 cpp_gpuMatrix_elem_acos(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_acos<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_acos<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_acos<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_acos<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_acos<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_acos<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2041,19 +1586,19 @@ cpp_gpuMatrix_elem_acos(
 void
 cpp_gpuMatrix_elem_cosh(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_cosh<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_cosh<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_cosh<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_cosh<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_cosh<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_cosh<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2064,19 +1609,19 @@ cpp_gpuMatrix_elem_cosh(
 void
 cpp_gpuMatrix_elem_tan(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_tan<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_tan<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_tan<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_tan<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_tan<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_tan<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2087,19 +1632,19 @@ cpp_gpuMatrix_elem_tan(
 void
 cpp_gpuMatrix_elem_atan(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_atan<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_atan<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_atan<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_atan<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_atan<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_atan<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2110,19 +1655,19 @@ cpp_gpuMatrix_elem_atan(
 void
 cpp_gpuMatrix_elem_tanh(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_tanh<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_tanh<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_tanh<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_tanh<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_tanh<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_tanh<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2133,19 +1678,19 @@ cpp_gpuMatrix_elem_tanh(
 void
 cpp_gpuMatrix_elem_log(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_log<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_log<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_log<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_log<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_log<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_log<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2157,19 +1702,19 @@ void
 cpp_gpuMatrix_elem_log_base(
     SEXP ptrA, SEXP ptrB,
     SEXP base,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_log_base<int>(ptrA, ptrB, as<int>(base), device_flag);
+            cpp_gpuMatrix_elem_log_base<int>(ptrA, ptrB, as<int>(base), ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_log_base<float>(ptrA, ptrB, as<float>(base), device_flag);
+            cpp_gpuMatrix_elem_log_base<float>(ptrA, ptrB, as<float>(base), ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_log_base<double>(ptrA, ptrB, as<double>(base), device_flag);
+            cpp_gpuMatrix_elem_log_base<double>(ptrA, ptrB, as<double>(base), ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2180,19 +1725,19 @@ cpp_gpuMatrix_elem_log_base(
 void
 cpp_gpuMatrix_elem_log10(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_log10<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_log10<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_log10<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_log10<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_log10<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_log10<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2203,19 +1748,19 @@ cpp_gpuMatrix_elem_log10(
 void
 cpp_gpuMatrix_elem_exp(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_exp<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_exp<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_exp<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_exp<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_exp<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_exp<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2226,19 +1771,19 @@ cpp_gpuMatrix_elem_exp(
 void
 cpp_gpuMatrix_elem_abs(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_elem_abs<int>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_abs<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_elem_abs<float>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_abs<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_elem_abs<double>(ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_elem_abs<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2250,19 +1795,19 @@ void
 cpp_gpuMatrix_axpy(
     SEXP alpha,
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_axpy<int>(alpha, ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_axpy<int>(alpha, ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_axpy<float>(alpha, ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_axpy<float>(alpha, ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_axpy<double>(alpha, ptrA, ptrB, device_flag);
+            cpp_gpuMatrix_axpy<double>(alpha, ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2273,19 +1818,19 @@ cpp_gpuMatrix_axpy(
 void
 cpp_gpuMatrix_unary_axpy(
     SEXP ptrA,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuMatrix_unary_axpy<int>(ptrA, device_flag);
+            cpp_gpuMatrix_unary_axpy<int>(ptrA, ctx_id);
             return;
         case 6:
-            cpp_gpuMatrix_unary_axpy<float>(ptrA, device_flag);
+            cpp_gpuMatrix_unary_axpy<float>(ptrA, ctx_id);
             return;
         case 8:
-            cpp_gpuMatrix_unary_axpy<double>(ptrA, device_flag);
+            cpp_gpuMatrix_unary_axpy<double>(ptrA, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -2299,32 +1844,15 @@ template <typename T>
 void cpp_vclVector_axpy(
     SEXP alpha_, 
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     const T alpha = as<T>(alpha_);
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pB(ptrB_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrB  = pB->data();
-
-//    Rcpp::XPtr<viennacl::vector<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::vector<T> > ptrB(ptrB_);
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrB  = pB->data();
     
     ptrB += alpha * (ptrA);
 }
@@ -2332,26 +1860,15 @@ void cpp_vclVector_axpy(
 template <typename T>
 void 
 cpp_vclVector_unary_axpy(
-    SEXP ptrA_, 
-    int device_flag)
+    SEXP ptrA_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
-    viennacl::vector_range<viennacl::vector<T> > vcl_A  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_A  = pA->data();
     
-    viennacl::vector<T> vcl_Z = viennacl::zero_vector<T>(vcl_A.size());
+    // viennacl::vector_base<T> vcl_Z = static_cast<viennacl::vector_base<T> >(viennacl::zero_vector<T>(vcl_A.size()));
+    
+    viennacl::vector_base<T> vcl_Z = viennacl::vector_base<T>(vcl_A.size());
+    viennacl::linalg::vector_assign(vcl_Z, (T)(0));
     
     vcl_Z -= vcl_A;
     vcl_A = vcl_Z;
@@ -2360,32 +1877,15 @@ cpp_vclVector_unary_axpy(
 template <typename T>
 T cpp_vclVector_inner_prod(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
     T out;
-    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::vector<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::vector<T> > ptrB(ptrB_);
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pB(ptrB_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrB  = pB->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrB  = pB->data();
     
     out = viennacl::linalg::inner_prod(ptrA, ptrB);
     return out;
@@ -2396,28 +1896,15 @@ template <typename T>
 void cpp_vclVector_outer_prod(
     SEXP ptrA_, 
     SEXP ptrB_,
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pB(ptrB_);
     Rcpp::XPtr<dynVCLMat<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrB  = pB->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrB  = pB->data();
     viennacl::matrix_range<viennacl::matrix<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::outer_prod(ptrA, ptrB);
@@ -2428,29 +1915,15 @@ template <typename T>
 void cpp_vclVector_elem_prod(
     SEXP ptrA_, 
     SEXP ptrB_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pB(ptrB_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrB  = pB->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrB  = pB->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_prod(ptrA, ptrB);
 }
@@ -2459,26 +1932,12 @@ template <typename T>
 void 
 cpp_vclVector_scalar_prod(
     SEXP ptrC_, 
-    SEXP scalar, 
-    int device_flag)
+    SEXP scalar)
 {        
     const T alpha = as<T>(scalar);
     
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
-    viennacl::vector_range<viennacl::vector<T> > vcl_C  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_C  = pC->data();
     
     vcl_C *= alpha;
 }
@@ -2487,33 +1946,15 @@ template <typename T>
 void cpp_vclVector_elem_div(
     SEXP ptrA_, 
     SEXP ptrB_, 
-    SEXP ptrC_,
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::vector<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::vector<T> > ptrB(ptrB_);
-//    Rcpp::XPtr<viennacl::vector<T> > ptrC(ptrC_);
-    
+    SEXP ptrC_)
+{        
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pB(ptrB_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrB  = pB->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrB  = pB->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_div(ptrA, ptrB);
 }
@@ -2522,26 +1963,12 @@ template <typename T>
 void 
 cpp_vclVector_scalar_div(
     SEXP ptrC_, 
-    SEXP scalar, 
-    int device_flag)
+    SEXP scalar)
 {        
     const T alpha = as<T>(scalar);
     
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
-    viennacl::vector_range<viennacl::vector<T> > vcl_C  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_C  = pC->data();
     
     vcl_C /= alpha;
 }
@@ -2550,29 +1977,15 @@ template <typename T>
 void cpp_vclVector_elem_pow(
     SEXP ptrA_, 
     SEXP ptrB_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pB(ptrB_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrB  = pB->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrB  = pB->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_pow(ptrA, ptrB);
 }
@@ -2581,32 +1994,20 @@ template <typename T>
 void cpp_vclVector_scalar_pow(
     SEXP ptrA_, 
     SEXP scalar_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     const T scalar = as<T>(scalar_);    
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > vcl_A  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > vcl_C  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_A  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_C  = pC->data();
     
+    // viennacl::vector_base<T> vcl_B = static_cast<viennacl::vector_base<T> >(viennacl::scalar_vector<T>(vcl_A.size(), scalar));
     
-    viennacl::vector<T> vcl_B = viennacl::scalar_vector<T>(vcl_A.size(), scalar);
+    viennacl::vector_base<T> vcl_B = viennacl::vector_base<T>(vcl_A.size());
+    viennacl::linalg::vector_assign(vcl_B, scalar);
     
     vcl_C = viennacl::linalg::element_pow(vcl_A, vcl_B);
     
@@ -2615,27 +2016,13 @@ void cpp_vclVector_scalar_pow(
 template <typename T>
 void cpp_vclVector_elem_sin(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_sin(ptrA);
 }
@@ -2644,27 +2031,14 @@ void cpp_vclVector_elem_sin(
 template <typename T>
 void cpp_vclVector_elem_asin(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_asin(ptrA);
 }
@@ -2673,27 +2047,14 @@ void cpp_vclVector_elem_asin(
 template <typename T>
 void cpp_vclVector_elem_sinh(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
 
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_sinh(ptrA);
 }
@@ -2702,27 +2063,13 @@ void cpp_vclVector_elem_sinh(
 template <typename T>
 void cpp_vclVector_elem_cos(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_cos(ptrA);
 }
@@ -2731,27 +2078,13 @@ void cpp_vclVector_elem_cos(
 template <typename T>
 void cpp_vclVector_elem_acos(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_acos(ptrA);
 }
@@ -2760,27 +2093,13 @@ void cpp_vclVector_elem_acos(
 template <typename T>
 void cpp_vclVector_elem_cosh(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+    SEXP ptrC_)
+{   
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_cosh(ptrA);
 }
@@ -2789,27 +2108,13 @@ void cpp_vclVector_elem_cosh(
 template <typename T>
 void cpp_vclVector_elem_tan(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_tan(ptrA);
 }
@@ -2818,27 +2123,13 @@ void cpp_vclVector_elem_tan(
 template <typename T>
 void cpp_vclVector_elem_atan(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_atan(ptrA);
 }
@@ -2847,27 +2138,13 @@ void cpp_vclVector_elem_atan(
 template <typename T>
 void cpp_vclVector_elem_tanh(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_tanh(ptrA);
 }
@@ -2875,27 +2152,13 @@ void cpp_vclVector_elem_tanh(
 template <typename T>
 void cpp_vclVector_elem_exp(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
-{
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+    SEXP ptrC_)
+{    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_exp(ptrA);
 }
@@ -2904,27 +2167,13 @@ void cpp_vclVector_elem_exp(
 template <typename T>
 void cpp_vclVector_elem_log10(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 { 
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_log10(ptrA);
 }
@@ -2934,27 +2183,13 @@ template <typename T>
 void cpp_vclVector_elem_log_base(
     SEXP ptrA_, 
     SEXP ptrC_,
-    T base,
-    int device_flag)
+    T base)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_log10(ptrA);
     ptrC /= log10(base);
@@ -2963,27 +2198,13 @@ void cpp_vclVector_elem_log_base(
 template <typename T>
 void cpp_vclVector_elem_log(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > ptrA  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > ptrC  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrA  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > ptrC  = pC->data();
 
     ptrC = viennacl::linalg::element_log(ptrA);
 }
@@ -2992,27 +2213,13 @@ template <typename T>
 void 
 cpp_vclVector_elem_abs(
     SEXP ptrA_, 
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
     Rcpp::XPtr<dynVCLVec<T> > pC(ptrC_);
     
-    viennacl::vector_range<viennacl::vector<T> > vcl_A  = pA->data();
-    viennacl::vector_range<viennacl::vector<T> > vcl_C  = pC->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_A  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_C  = pC->data();
     
     vcl_C = viennacl::linalg::element_fabs(vcl_A);
 }
@@ -3020,26 +2227,12 @@ cpp_vclVector_elem_abs(
 template <typename T>
 T
 cpp_vclVector_max(
-    SEXP ptrA_,
-    int device_flag)
+    SEXP ptrA_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     T max;
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
-    viennacl::vector_range<viennacl::vector<T> > vcl_A  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_A  = pA->data();
     
     max = viennacl::linalg::max(vcl_A);
     
@@ -3049,26 +2242,12 @@ cpp_vclVector_max(
 template <typename T>
 T
 cpp_vclVector_min(
-    SEXP ptrA_,
-    int device_flag)
+    SEXP ptrA_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     T max;
     
     Rcpp::XPtr<dynVCLVec<T> > pA(ptrA_);
-    viennacl::vector_range<viennacl::vector<T> > vcl_A  = pA->data();
+    viennacl::vector_range<viennacl::vector_base<T> > vcl_A  = pA->data();
     
     max = viennacl::linalg::min(vcl_A);
     
@@ -3081,26 +2260,9 @@ template <typename T>
 void cpp_vclMatrix_axpy(
     SEXP alpha_, 
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     const T alpha = as<T>(alpha_);
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
@@ -3114,27 +2276,16 @@ void cpp_vclMatrix_axpy(
 template <typename T>
 void 
 cpp_vclMatrix_unary_axpy(
-    SEXP ptrA_, 
-    int device_flag)
+    SEXP ptrA_,
+    int ctx_id)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+   
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);    
     viennacl::matrix_range<viennacl::matrix<T> > vcl_A  = ptrA->data();
+    viennacl::context ctx(viennacl::ocl::get_context(static_cast<long>(ctx_id)));
     
     
-    viennacl::matrix<T> vcl_Z = viennacl::zero_matrix<T>(vcl_A.size1(),vcl_A.size2());
+    viennacl::matrix<T> vcl_Z = viennacl::zero_matrix<T>(vcl_A.size1(),vcl_A.size2(), ctx);
     
     vcl_Z -= vcl_A;
     vcl_A = vcl_Z;
@@ -3145,22 +2296,8 @@ template <typename T>
 void cpp_vclMatrix_elem_prod(
     SEXP ptrA_, 
     SEXP ptrB_,
-    SEXP ptrC_,
-    int device_flag)
-{
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+    SEXP ptrC_)
+{    
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     Rcpp::XPtr<dynVCLMat<T> > ptrC(ptrC_);
@@ -3176,23 +2313,9 @@ template <typename T>
 void 
 cpp_vclMatrix_scalar_prod(
     SEXP ptrC_, 
-    SEXP scalar, 
-    int device_flag)
+    SEXP scalar)
 {        
     const T alpha = as<T>(scalar);
-    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
 
     Rcpp::XPtr<dynVCLMat<T> > ptrC(ptrC_);
     viennacl::matrix_range<viennacl::matrix<T> > vcl_C  = ptrC->data();
@@ -3204,22 +2327,8 @@ template <typename T>
 void cpp_vclMatrix_elem_div(
     SEXP ptrA_, 
     SEXP ptrB_,
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     Rcpp::XPtr<dynVCLMat<T> > ptrC(ptrC_);
@@ -3235,23 +2344,9 @@ template <typename T>
 void 
 cpp_vclMatrix_scalar_div(
     SEXP ptrC_, 
-    SEXP scalar, 
-    int device_flag)
+    SEXP scalar)
 {        
     const T alpha = as<T>(scalar);
-    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
 
     Rcpp::XPtr<dynVCLMat<T> > ptrC(ptrC_);
     viennacl::matrix_range<viennacl::matrix<T> > vcl_C  = ptrC->data();
@@ -3263,21 +2358,8 @@ template <typename T>
 void cpp_vclMatrix_elem_pow(
     SEXP ptrA_, 
     SEXP ptrB_,
-    SEXP ptrC_,
-    int device_flag)
+    SEXP ptrC_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
@@ -3295,31 +2377,20 @@ void
 cpp_vclMatrix_scalar_pow(
     SEXP ptrA_, 
     SEXP scalar_, 
-    SEXP ptrC_, 
-    int device_flag)
+    SEXP ptrC_,
+    int ctx_id)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
     
     const T scalar = as<T>(scalar_);    
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrC(ptrC_);
+    viennacl::context ctx(viennacl::ocl::get_context(ctx_id));
     
     viennacl::matrix_range<viennacl::matrix<T> > vcl_A  = ptrA->data();
     viennacl::matrix_range<viennacl::matrix<T> > vcl_C  = ptrC->data();
     
-    viennacl::matrix<T> vcl_B = viennacl::scalar_matrix<T>(vcl_A.size1(),vcl_A.size2(),scalar);
+    viennacl::matrix<T> vcl_B = viennacl::scalar_matrix<T>(vcl_A.size1(),vcl_A.size2(),scalar, ctx);
     
     vcl_C = viennacl::linalg::element_pow(vcl_A, vcl_B);
 }
@@ -3327,24 +2398,8 @@ cpp_vclMatrix_scalar_pow(
 template <typename T>
 void cpp_vclMatrix_elem_sin(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
@@ -3358,25 +2413,9 @@ void cpp_vclMatrix_elem_sin(
 template <typename T>
 void cpp_vclMatrix_elem_asin(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
-    
+
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3389,25 +2428,8 @@ void cpp_vclMatrix_elem_asin(
 template <typename T>
 void cpp_vclMatrix_elem_sinh(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
-    
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3420,25 +2442,8 @@ void cpp_vclMatrix_elem_sinh(
 template <typename T>
 void cpp_vclMatrix_elem_cos(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
-{
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
-    
+    SEXP ptrB_)
+{    
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3451,25 +2456,9 @@ void cpp_vclMatrix_elem_cos(
 template <typename T>
 void cpp_vclMatrix_elem_acos(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
-    
+
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3482,24 +2471,8 @@ void cpp_vclMatrix_elem_acos(
 template <typename T>
 void cpp_vclMatrix_elem_cosh(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
@@ -3513,24 +2486,8 @@ void cpp_vclMatrix_elem_cosh(
 template <typename T>
 void cpp_vclMatrix_elem_tan(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
@@ -3544,25 +2501,8 @@ void cpp_vclMatrix_elem_tan(
 template <typename T>
 void cpp_vclMatrix_elem_atan(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrA(ptrA_);
-//    Rcpp::XPtr<viennacl::matrix<T> > ptrB(ptrB_);
-    
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3575,22 +2515,8 @@ void cpp_vclMatrix_elem_atan(
 template <typename T>
 void cpp_vclMatrix_elem_tanh(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
-{
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+    SEXP ptrB_)
+{    
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3603,22 +2529,9 @@ void cpp_vclMatrix_elem_tanh(
 template <typename T>
 void cpp_vclMatrix_elem_log(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3632,21 +2545,8 @@ void cpp_vclMatrix_elem_log(
 template <typename T>
 void cpp_vclMatrix_elem_log10(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
+    SEXP ptrB_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
     
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
@@ -3662,22 +2562,9 @@ template <typename T>
 void cpp_vclMatrix_elem_log_base(
     SEXP ptrA_, 
     SEXP ptrB_,
-    const float base,
-    int device_flag)
+    const float base)
 {
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3691,22 +2578,8 @@ void cpp_vclMatrix_elem_log_base(
 template <typename T>
 void cpp_vclMatrix_elem_exp(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+    SEXP ptrB_)
+{        
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3719,22 +2592,8 @@ void cpp_vclMatrix_elem_exp(
 template <typename T>
 void cpp_vclMatrix_elem_abs(
     SEXP ptrA_, 
-    SEXP ptrB_,
-    int device_flag)
-{    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
+    SEXP ptrB_)
+{        
     Rcpp::XPtr<dynVCLMat<T> > ptrA(ptrA_);
     Rcpp::XPtr<dynVCLMat<T> > ptrB(ptrB_);
     
@@ -3747,21 +2606,8 @@ void cpp_vclMatrix_elem_abs(
 template <typename T>
 T
 cpp_vclMatrix_max(
-    SEXP ptrA_,
-    int device_flag)
+    SEXP ptrA_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
     
     T max_out;
     
@@ -3783,22 +2629,8 @@ cpp_vclMatrix_max(
 template <typename T>
 T
 cpp_vclMatrix_min(
-    SEXP ptrA_,
-    int device_flag)
+    SEXP ptrA_)
 {    
-    // define device type to use
-    if(device_flag == 0){
-        //use only GPUs
-        long id = 0;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-        viennacl::ocl::switch_context(id);
-    }else{
-        // use only CPUs
-        long id = 1;
-        viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-        viennacl::ocl::switch_context(id);
-    }
-    
     T min_out;
     
     Rcpp::XPtr<dynVCLMat<T> > pA(ptrA_);
@@ -3823,19 +2655,18 @@ void
 cpp_vclMatrix_axpy(
     SEXP alpha,
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclMatrix_axpy<int>(alpha, ptrA, ptrB, device_flag);
+            cpp_vclMatrix_axpy<int>(alpha, ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_axpy<float>(alpha, ptrA, ptrB, device_flag);
+            cpp_vclMatrix_axpy<float>(alpha, ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_axpy<double>(alpha, ptrA, ptrB, device_flag);
+            cpp_vclMatrix_axpy<double>(alpha, ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -3846,19 +2677,19 @@ cpp_vclMatrix_axpy(
 void
 cpp_vclMatrix_unary_axpy(
     SEXP ptrA,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclMatrix_unary_axpy<int>(ptrA, device_flag);
+            cpp_vclMatrix_unary_axpy<int>(ptrA, ctx_id);
             return;
         case 6:
-            cpp_vclMatrix_unary_axpy<float>(ptrA, device_flag);
+            cpp_vclMatrix_unary_axpy<float>(ptrA, ctx_id);
             return;
         case 8:
-            cpp_vclMatrix_unary_axpy<double>(ptrA, device_flag);
+            cpp_vclMatrix_unary_axpy<double>(ptrA, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuMatrix object!");
@@ -3870,18 +2701,17 @@ void cpp_vclMatrix_elem_prod(
     SEXP ptrA, 
     SEXP ptrB,
     SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_prod<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_prod<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclMatrix_elem_prod<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_prod<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclMatrix_elem_prod<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_prod<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -3893,19 +2723,18 @@ void
 cpp_vclMatrix_scalar_prod(
     SEXP ptrC,
     SEXP B_scalar,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclMatrix_scalar_prod<int>(ptrC, B_scalar, device_flag);
+            cpp_vclMatrix_scalar_prod<int>(ptrC, B_scalar);
             return;
         case 6:
-            cpp_vclMatrix_scalar_prod<float>(ptrC, B_scalar, device_flag);
+            cpp_vclMatrix_scalar_prod<float>(ptrC, B_scalar);
             return;
         case 8:
-            cpp_vclMatrix_scalar_prod<double>(ptrC, B_scalar, device_flag);
+            cpp_vclMatrix_scalar_prod<double>(ptrC, B_scalar);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -3917,18 +2746,17 @@ void cpp_vclMatrix_elem_div(
     SEXP ptrA, 
     SEXP ptrB,
     SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_div<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_div<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclMatrix_elem_div<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_div<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclMatrix_elem_div<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_div<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -3940,19 +2768,18 @@ void
 cpp_vclMatrix_scalar_div(
     SEXP ptrC,
     SEXP B_scalar,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclMatrix_scalar_div<int>(ptrC, B_scalar, device_flag);
+            cpp_vclMatrix_scalar_div<int>(ptrC, B_scalar);
             return;
         case 6:
-            cpp_vclMatrix_scalar_div<float>(ptrC, B_scalar, device_flag);
+            cpp_vclMatrix_scalar_div<float>(ptrC, B_scalar);
             return;
         case 8:
-            cpp_vclMatrix_scalar_div<double>(ptrC, B_scalar, device_flag);
+            cpp_vclMatrix_scalar_div<double>(ptrC, B_scalar);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -3964,18 +2791,17 @@ void cpp_vclMatrix_elem_pow(
     SEXP ptrA, 
     SEXP ptrB,
     SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_pow<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_pow<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclMatrix_elem_pow<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_pow<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclMatrix_elem_pow<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclMatrix_elem_pow<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -3988,19 +2814,19 @@ cpp_vclMatrix_scalar_pow(
     SEXP ptrA, 
     SEXP scalar, 
     SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclMatrix_scalar_pow<int>(ptrA, scalar, ptrC, device_flag);
+            cpp_vclMatrix_scalar_pow<int>(ptrA, scalar, ptrC, ctx_id);
             return;
         case 6:
-            cpp_vclMatrix_scalar_pow<float>(ptrA, scalar, ptrC, device_flag);
+            cpp_vclMatrix_scalar_pow<float>(ptrA, scalar, ptrC, ctx_id);
             return;
         case 8:
-            cpp_vclMatrix_scalar_pow<double>(ptrA, scalar, ptrC, device_flag);
+            cpp_vclMatrix_scalar_pow<double>(ptrA, scalar, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4011,18 +2837,17 @@ cpp_vclMatrix_scalar_pow(
 void cpp_vclMatrix_elem_sin(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_sin<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_sin<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_sin<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_sin<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_sin<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_sin<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4033,18 +2858,17 @@ void cpp_vclMatrix_elem_sin(
 void cpp_vclMatrix_elem_asin(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_asin<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_asin<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_asin<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_asin<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_asin<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_asin<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4055,18 +2879,17 @@ void cpp_vclMatrix_elem_asin(
 void cpp_vclMatrix_elem_sinh(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_sinh<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_sinh<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_sinh<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_sinh<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_sinh<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_sinh<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4078,18 +2901,17 @@ void cpp_vclMatrix_elem_sinh(
 void cpp_vclMatrix_elem_cos(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_cos<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_cos<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_cos<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_cos<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_cos<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_cos<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4100,18 +2922,17 @@ void cpp_vclMatrix_elem_cos(
 void cpp_vclMatrix_elem_acos(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_acos<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_acos<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_acos<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_acos<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_acos<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_acos<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4123,18 +2944,17 @@ void cpp_vclMatrix_elem_acos(
 void cpp_vclMatrix_elem_cosh(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_cosh<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_cosh<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_cosh<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_cosh<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_cosh<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_cosh<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4146,18 +2966,17 @@ void cpp_vclMatrix_elem_cosh(
 void cpp_vclMatrix_elem_tan(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_tan<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_tan<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_tan<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_tan<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_tan<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_tan<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4168,18 +2987,17 @@ void cpp_vclMatrix_elem_tan(
 void cpp_vclMatrix_elem_atan(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_atan<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_atan<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_atan<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_atan<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_atan<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_atan<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4190,18 +3008,17 @@ void cpp_vclMatrix_elem_atan(
 void cpp_vclMatrix_elem_tanh(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_tanh<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_tanh<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_tanh<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_tanh<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_tanh<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_tanh<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4212,18 +3029,17 @@ void cpp_vclMatrix_elem_tanh(
 void cpp_vclMatrix_elem_log(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_log<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_log<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_log<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_log<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_log<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_log<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4235,18 +3051,17 @@ void cpp_vclMatrix_elem_log(
 void cpp_vclMatrix_elem_log10(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_log10<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_log10<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_log10<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_log10<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_log10<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_log10<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4259,18 +3074,17 @@ void cpp_vclMatrix_elem_log_base(
     SEXP ptrA, 
     SEXP ptrB,
     SEXP base,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_log_base<int>(ptrA, ptrB, as<int>(base), device_flag);
+            cpp_vclMatrix_elem_log_base<int>(ptrA, ptrB, as<int>(base));
             return;
         case 6:
-            cpp_vclMatrix_elem_log_base<float>(ptrA, ptrB, as<float>(base), device_flag);
+            cpp_vclMatrix_elem_log_base<float>(ptrA, ptrB, as<float>(base));
             return;
         case 8:
-            cpp_vclMatrix_elem_log_base<double>(ptrA, ptrB, as<double>(base), device_flag);
+            cpp_vclMatrix_elem_log_base<double>(ptrA, ptrB, as<double>(base));
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4281,18 +3095,17 @@ void cpp_vclMatrix_elem_log_base(
 void cpp_vclMatrix_elem_exp(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_exp<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_exp<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_exp<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_exp<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_exp<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_exp<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4303,18 +3116,17 @@ void cpp_vclMatrix_elem_exp(
 void cpp_vclMatrix_elem_abs(
     SEXP ptrA, 
     SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
    switch(type_flag) {
         case 4:
-            cpp_vclMatrix_elem_abs<int>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_abs<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclMatrix_elem_abs<float>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_abs<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclMatrix_elem_abs<double>(ptrA, ptrB, device_flag);
+            cpp_vclMatrix_elem_abs<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclMatrix object!");
@@ -4325,17 +3137,16 @@ void cpp_vclMatrix_elem_abs(
 SEXP
 cpp_vclMatrix_max(
     SEXP ptrA,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_vclMatrix_max<int>(ptrA, device_flag));
+            return wrap(cpp_vclMatrix_max<int>(ptrA));
         case 6:
-            return wrap(cpp_vclMatrix_max<float>(ptrA, device_flag));
+            return wrap(cpp_vclMatrix_max<float>(ptrA));
         case 8:
-            return wrap(cpp_vclMatrix_max<double>(ptrA, device_flag));
+            return wrap(cpp_vclMatrix_max<double>(ptrA));
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
     }
@@ -4345,17 +3156,16 @@ cpp_vclMatrix_max(
 SEXP
 cpp_vclMatrix_min(
     SEXP ptrA,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_vclMatrix_min<int>(ptrA, device_flag));
+            return wrap(cpp_vclMatrix_min<int>(ptrA));
         case 6:
-            return wrap(cpp_vclMatrix_min<float>(ptrA, device_flag));
+            return wrap(cpp_vclMatrix_min<float>(ptrA));
         case 8:
-            return wrap(cpp_vclMatrix_min<double>(ptrA, device_flag));
+            return wrap(cpp_vclMatrix_min<double>(ptrA));
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
     }
@@ -4370,19 +3180,19 @@ void
 cpp_gpuVector_axpy(
     SEXP alpha,
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_axpy<int>(alpha, ptrA, ptrB, device_flag);
+            cpp_gpuVector_axpy<int>(alpha, ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_axpy<float>(alpha, ptrA, ptrB, device_flag);
+            cpp_gpuVector_axpy<float>(alpha, ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_axpy<double>(alpha, ptrA, ptrB, device_flag);
+            cpp_gpuVector_axpy<double>(alpha, ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4393,19 +3203,19 @@ cpp_gpuVector_axpy(
 void
 cpp_gpuVector_unary_axpy(
     SEXP ptrA,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_unary_axpy<int>(ptrA, device_flag);
+            cpp_gpuVector_unary_axpy<int>(ptrA, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_unary_axpy<float>(ptrA, device_flag);
+            cpp_gpuVector_unary_axpy<float>(ptrA, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_unary_axpy<double>(ptrA, device_flag);
+            cpp_gpuVector_unary_axpy<double>(ptrA, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4417,17 +3227,17 @@ cpp_gpuVector_unary_axpy(
 SEXP
 cpp_gpuVector_inner_prod(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_gpuVector_inner_prod<int>(ptrA, ptrB, device_flag));
+            return wrap(cpp_gpuVector_inner_prod<int>(ptrA, ptrB, ctx_id));
         case 6:
-            return wrap(cpp_gpuVector_inner_prod<float>(ptrA, ptrB, device_flag));
+            return wrap(cpp_gpuVector_inner_prod<float>(ptrA, ptrB, ctx_id));
         case 8:
-            return wrap(cpp_gpuVector_inner_prod<double>(ptrA, ptrB, device_flag));
+            return wrap(cpp_gpuVector_inner_prod<double>(ptrA, ptrB, ctx_id));
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
     }
@@ -4437,19 +3247,19 @@ cpp_gpuVector_inner_prod(
 void
 cpp_gpuVector_outer_prod(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_outer_prod<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_outer_prod<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_outer_prod<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_outer_prod<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_outer_prod<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_outer_prod<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4461,19 +3271,19 @@ cpp_gpuVector_outer_prod(
 void
 cpp_gpuVector_elem_prod(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_prod<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_prod<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_prod<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_prod<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_prod<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_prod<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4485,19 +3295,19 @@ void
 cpp_gpuVector_scalar_prod(
     SEXP ptrC,
     SEXP scalar,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_scalar_prod<int>(ptrC, scalar, device_flag);
+            cpp_gpuVector_scalar_prod<int>(ptrC, scalar, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_scalar_prod<float>(ptrC, scalar, device_flag);
+            cpp_gpuVector_scalar_prod<float>(ptrC, scalar, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_scalar_prod<double>(ptrC, scalar, device_flag);
+            cpp_gpuVector_scalar_prod<double>(ptrC, scalar, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4508,19 +3318,19 @@ cpp_gpuVector_scalar_prod(
 void
 cpp_gpuVector_elem_div(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_div<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_div<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_div<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_div<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_div<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_div<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4533,19 +3343,19 @@ cpp_gpuVector_scalar_div(
     SEXP ptrC,
     SEXP scalar,
     const int order,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_scalar_div<int>(ptrC, scalar, order, device_flag);
+            cpp_gpuVector_scalar_div<int>(ptrC, scalar, order, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_scalar_div<float>(ptrC, scalar, order, device_flag);
+            cpp_gpuVector_scalar_div<float>(ptrC, scalar, order, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_scalar_div<double>(ptrC, scalar, order, device_flag);
+            cpp_gpuVector_scalar_div<double>(ptrC, scalar, order, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4556,19 +3366,19 @@ cpp_gpuVector_scalar_div(
 void
 cpp_gpuVector_elem_pow(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_pow<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_pow<int>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_pow<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_pow<float>(ptrA, ptrB, ptrC, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_pow<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_gpuVector_elem_pow<double>(ptrA, ptrB, ptrC, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4580,19 +3390,19 @@ void
 cpp_gpuVector_scalar_pow(
     SEXP ptrA, SEXP scalar, SEXP ptrC,
     const int order,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_scalar_pow<int>(ptrA, scalar, ptrC, order, device_flag);
+            cpp_gpuVector_scalar_pow<int>(ptrA, scalar, ptrC, order, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_scalar_pow<float>(ptrA, scalar, ptrC, order, device_flag);
+            cpp_gpuVector_scalar_pow<float>(ptrA, scalar, ptrC, order, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_scalar_pow<double>(ptrA, scalar, ptrC, order, device_flag);
+            cpp_gpuVector_scalar_pow<double>(ptrA, scalar, ptrC, order, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4603,19 +3413,19 @@ cpp_gpuVector_scalar_pow(
 void
 cpp_gpuVector_elem_sin(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_sin<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_sin<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_sin<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_sin<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_sin<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_sin<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4626,19 +3436,19 @@ cpp_gpuVector_elem_sin(
 void
 cpp_gpuVector_elem_asin(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_asin<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_asin<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_asin<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_asin<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_asin<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_asin<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4649,19 +3459,19 @@ cpp_gpuVector_elem_asin(
 void
 cpp_gpuVector_elem_sinh(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_sinh<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_sinh<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_sinh<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_sinh<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_sinh<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_sinh<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4672,19 +3482,19 @@ cpp_gpuVector_elem_sinh(
 void
 cpp_gpuVector_elem_cos(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_cos<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_cos<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_cos<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_cos<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_cos<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_cos<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4695,19 +3505,19 @@ cpp_gpuVector_elem_cos(
 void
 cpp_gpuVector_elem_acos(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_acos<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_acos<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_acos<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_acos<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_acos<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_acos<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4718,19 +3528,19 @@ cpp_gpuVector_elem_acos(
 void
 cpp_gpuVector_elem_cosh(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_cosh<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_cosh<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_cosh<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_cosh<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_cosh<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_cosh<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4742,19 +3552,19 @@ cpp_gpuVector_elem_cosh(
 void
 cpp_gpuVector_elem_tan(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_tan<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_tan<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_tan<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_tan<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_tan<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_tan<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4765,19 +3575,19 @@ cpp_gpuVector_elem_tan(
 void
 cpp_gpuVector_elem_atan(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_atan<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_atan<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_atan<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_atan<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_atan<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_atan<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4788,19 +3598,19 @@ cpp_gpuVector_elem_atan(
 void
 cpp_gpuVector_elem_tanh(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_tanh<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_tanh<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_tanh<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_tanh<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_tanh<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_tanh<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4811,19 +3621,19 @@ cpp_gpuVector_elem_tanh(
 void
 cpp_gpuVector_elem_log10(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_log10<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_log10<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_log10<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_log10<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_log10<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_log10<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4834,19 +3644,19 @@ cpp_gpuVector_elem_log10(
 void
 cpp_gpuVector_elem_log(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_log<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_log<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_log<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_log<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_log<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_log<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4858,19 +3668,19 @@ void
 cpp_gpuVector_elem_log_base(
     SEXP ptrA, SEXP ptrB,
     SEXP base,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_log_base<int>(ptrA, ptrB, as<int>(base), device_flag);
+            cpp_gpuVector_elem_log_base<int>(ptrA, ptrB, as<int>(base), ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_log_base<float>(ptrA, ptrB, as<float>(base), device_flag);
+            cpp_gpuVector_elem_log_base<float>(ptrA, ptrB, as<float>(base), ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_log_base<double>(ptrA, ptrB, as<double>(base), device_flag);
+            cpp_gpuVector_elem_log_base<double>(ptrA, ptrB, as<double>(base), ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4881,19 +3691,19 @@ cpp_gpuVector_elem_log_base(
 void
 cpp_gpuVector_elem_exp(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_exp<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_exp<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_exp<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_exp<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_exp<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_exp<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4904,19 +3714,19 @@ cpp_gpuVector_elem_exp(
 void
 cpp_gpuVector_elem_abs(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_gpuVector_elem_abs<int>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_abs<int>(ptrA, ptrB, ctx_id);
             return;
         case 6:
-            cpp_gpuVector_elem_abs<float>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_abs<float>(ptrA, ptrB, ctx_id);
             return;
         case 8:
-            cpp_gpuVector_elem_abs<double>(ptrA, ptrB, device_flag);
+            cpp_gpuVector_elem_abs<double>(ptrA, ptrB, ctx_id);
             return;
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
@@ -4927,17 +3737,17 @@ cpp_gpuVector_elem_abs(
 SEXP
 cpp_gpuVector_max(
     SEXP ptrA,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_gpuVector_max<int>(ptrA, device_flag));
+            return wrap(cpp_gpuVector_max<int>(ptrA, ctx_id));
         case 6:
-            return wrap(cpp_gpuVector_max<float>(ptrA, device_flag));
+            return wrap(cpp_gpuVector_max<float>(ptrA, ctx_id));
         case 8:
-            return wrap(cpp_gpuVector_max<double>(ptrA, device_flag));
+            return wrap(cpp_gpuVector_max<double>(ptrA, ctx_id));
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
     }
@@ -4947,17 +3757,17 @@ cpp_gpuVector_max(
 SEXP
 cpp_gpuVector_min(
     SEXP ptrA,
-    int device_flag,
-    const int type_flag)
+    const int type_flag,
+    int ctx_id)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_gpuVector_min<int>(ptrA, device_flag));
+            return wrap(cpp_gpuVector_min<int>(ptrA, ctx_id));
         case 6:
-            return wrap(cpp_gpuVector_min<float>(ptrA, device_flag));
+            return wrap(cpp_gpuVector_min<float>(ptrA, ctx_id));
         case 8:
-            return wrap(cpp_gpuVector_min<double>(ptrA, device_flag));
+            return wrap(cpp_gpuVector_min<double>(ptrA, ctx_id));
         default:
             throw Rcpp::exception("unknown type detected for gpuVector object!");
     }
@@ -4970,19 +3780,18 @@ void
 cpp_vclVector_axpy(
     SEXP alpha,
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_axpy<int>(alpha, ptrA, ptrB, device_flag);
+            cpp_vclVector_axpy<int>(alpha, ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_axpy<float>(alpha, ptrA, ptrB, device_flag);
+            cpp_vclVector_axpy<float>(alpha, ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_axpy<double>(alpha, ptrA, ptrB, device_flag);
+            cpp_vclVector_axpy<double>(alpha, ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -4993,22 +3802,21 @@ cpp_vclVector_axpy(
 void
 cpp_vclVector_unary_axpy(
     SEXP ptrA,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_unary_axpy<int>(ptrA, device_flag);
+            cpp_vclVector_unary_axpy<int>(ptrA);
             return;
         case 6:
-            cpp_vclVector_unary_axpy<float>(ptrA, device_flag);
+            cpp_vclVector_unary_axpy<float>(ptrA);
             return;
         case 8:
-            cpp_vclVector_unary_axpy<double>(ptrA, device_flag);
+            cpp_vclVector_unary_axpy<double>(ptrA);
             return;
         default:
-            throw Rcpp::exception("unknown type detected for gpuVector object!");
+            throw Rcpp::exception("unknown type detected for vclVector object!");
     }
 }
 
@@ -5017,17 +3825,16 @@ cpp_vclVector_unary_axpy(
 SEXP
 cpp_vclVector_inner_prod(
     SEXP ptrA, SEXP ptrB,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_vclVector_inner_prod<int>(ptrA, ptrB, device_flag));
+            return wrap(cpp_vclVector_inner_prod<int>(ptrA, ptrB));
         case 6:
-            return wrap(cpp_vclVector_inner_prod<float>(ptrA, ptrB, device_flag));
+            return wrap(cpp_vclVector_inner_prod<float>(ptrA, ptrB));
         case 8:
-            return wrap(cpp_vclVector_inner_prod<double>(ptrA, ptrB, device_flag));
+            return wrap(cpp_vclVector_inner_prod<double>(ptrA, ptrB));
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
     }
@@ -5037,19 +3844,18 @@ cpp_vclVector_inner_prod(
 void
 cpp_vclVector_outer_prod(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_outer_prod<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_outer_prod<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclVector_outer_prod<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_outer_prod<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclVector_outer_prod<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_outer_prod<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5060,19 +3866,18 @@ cpp_vclVector_outer_prod(
 void
 cpp_vclVector_elem_prod(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_prod<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_prod<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclVector_elem_prod<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_prod<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclVector_elem_prod<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_prod<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5084,19 +3889,18 @@ void
 cpp_vclVector_scalar_prod(
     SEXP ptrC,
     SEXP scalar,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_scalar_prod<int>(ptrC, scalar, device_flag);
+            cpp_vclVector_scalar_prod<int>(ptrC, scalar);
             return;
         case 6:
-            cpp_vclVector_scalar_prod<float>(ptrC, scalar, device_flag);
+            cpp_vclVector_scalar_prod<float>(ptrC, scalar);
             return;
         case 8:
-            cpp_vclVector_scalar_prod<double>(ptrC, scalar, device_flag);
+            cpp_vclVector_scalar_prod<double>(ptrC, scalar);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5107,19 +3911,18 @@ cpp_vclVector_scalar_prod(
 void
 cpp_vclVector_elem_div(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_div<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_div<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclVector_elem_div<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_div<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclVector_elem_div<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_div<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5132,19 +3935,18 @@ void
 cpp_vclVector_scalar_div(
     SEXP ptrC, 
     SEXP scalar, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_scalar_div<int>(ptrC, scalar, device_flag);
+            cpp_vclVector_scalar_div<int>(ptrC, scalar);
             return;
         case 6:
-            cpp_vclVector_scalar_div<float>(ptrC, scalar, device_flag);
+            cpp_vclVector_scalar_div<float>(ptrC, scalar);
             return;
         case 8:
-            cpp_vclVector_scalar_div<double>(ptrC, scalar, device_flag);
+            cpp_vclVector_scalar_div<double>(ptrC, scalar);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5155,19 +3957,18 @@ cpp_vclVector_scalar_div(
 void
 cpp_vclVector_elem_pow(
     SEXP ptrA, SEXP ptrB, SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_pow<int>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_pow<int>(ptrA, ptrB, ptrC);
             return;
         case 6:
-            cpp_vclVector_elem_pow<float>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_pow<float>(ptrA, ptrB, ptrC);
             return;
         case 8:
-            cpp_vclVector_elem_pow<double>(ptrA, ptrB, ptrC, device_flag);
+            cpp_vclVector_elem_pow<double>(ptrA, ptrB, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5181,19 +3982,18 @@ cpp_vclVector_scalar_pow(
     SEXP ptrA, 
     SEXP scalar, 
     SEXP ptrC,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_scalar_pow<int>(ptrA, scalar, ptrC, device_flag);
+            cpp_vclVector_scalar_pow<int>(ptrA, scalar, ptrC);
             return;
         case 6:
-            cpp_vclVector_scalar_pow<float>(ptrA, scalar, ptrC, device_flag);
+            cpp_vclVector_scalar_pow<float>(ptrA, scalar, ptrC);
             return;
         case 8:
-            cpp_vclVector_scalar_pow<double>(ptrA, scalar, ptrC, device_flag);
+            cpp_vclVector_scalar_pow<double>(ptrA, scalar, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5204,19 +4004,18 @@ cpp_vclVector_scalar_pow(
 void
 cpp_vclVector_elem_sin(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_sin<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_sin<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_sin<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_sin<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_sin<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_sin<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5227,19 +4026,18 @@ cpp_vclVector_elem_sin(
 void
 cpp_vclVector_elem_asin(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_asin<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_asin<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_asin<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_asin<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_asin<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_asin<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5251,19 +4049,18 @@ cpp_vclVector_elem_asin(
 void
 cpp_vclVector_elem_sinh(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_sinh<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_sinh<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_sinh<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_sinh<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_sinh<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_sinh<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5275,19 +4072,18 @@ cpp_vclVector_elem_sinh(
 void
 cpp_vclVector_elem_cos(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_cos<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_cos<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_cos<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_cos<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_cos<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_cos<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5298,19 +4094,18 @@ cpp_vclVector_elem_cos(
 void
 cpp_vclVector_elem_acos(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_acos<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_acos<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_acos<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_acos<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_acos<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_acos<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5322,19 +4117,18 @@ cpp_vclVector_elem_acos(
 void
 cpp_vclVector_elem_cosh(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_cosh<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_cosh<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_cosh<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_cosh<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_cosh<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_cosh<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5346,19 +4140,18 @@ cpp_vclVector_elem_cosh(
 void
 cpp_vclVector_elem_tan(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_tan<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_tan<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_tan<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_tan<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_tan<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_tan<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5369,19 +4162,18 @@ cpp_vclVector_elem_tan(
 void
 cpp_vclVector_elem_atan(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_atan<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_atan<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_atan<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_atan<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_atan<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_atan<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5392,20 +4184,19 @@ cpp_vclVector_elem_atan(
 // [[Rcpp::export]]
 void
 cpp_vclVector_elem_tanh(
-    SEXP ptrA, SEXP ptrB, 
-    int device_flag,
+    SEXP ptrA, SEXP ptrB,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_tanh<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_tanh<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_tanh<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_tanh<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_tanh<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_tanh<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5417,19 +4208,18 @@ cpp_vclVector_elem_tanh(
 void
 cpp_vclVector_elem_log(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_log<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_log<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_log<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_log<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_log<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_log<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5440,19 +4230,18 @@ cpp_vclVector_elem_log(
 void
 cpp_vclVector_elem_log10(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_log10<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_log10<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_log10<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_log10<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_log10<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_log10<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5465,19 +4254,18 @@ void
 cpp_vclVector_elem_log_base(
     SEXP ptrA, SEXP ptrB, 
     SEXP R_base,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_log_base<int>(ptrA, ptrB, as<int>(R_base), device_flag);
+            cpp_vclVector_elem_log_base<int>(ptrA, ptrB, as<int>(R_base));
             return;
         case 6:
-            cpp_vclVector_elem_log_base<float>(ptrA, ptrB, as<float>(R_base), device_flag);
+            cpp_vclVector_elem_log_base<float>(ptrA, ptrB, as<float>(R_base));
             return;
         case 8:
-            cpp_vclVector_elem_log_base<double>(ptrA, ptrB, as<double>(R_base), device_flag);
+            cpp_vclVector_elem_log_base<double>(ptrA, ptrB, as<double>(R_base));
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5489,18 +4277,17 @@ cpp_vclVector_elem_log_base(
 void
 cpp_vclVector_elem_exp(
     SEXP ptrA, SEXP ptrB, 
-    int device_flag,
     const int type_flag)
 {
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_exp<int>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_exp<int>(ptrA, ptrB);
             return;
         case 6:
-            cpp_vclVector_elem_exp<float>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_exp<float>(ptrA, ptrB);
             return;
         case 8:
-            cpp_vclVector_elem_exp<double>(ptrA, ptrB, device_flag);
+            cpp_vclVector_elem_exp<double>(ptrA, ptrB);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5511,19 +4298,18 @@ cpp_vclVector_elem_exp(
 void
 cpp_vclVector_elem_abs(
     SEXP ptrA, SEXP ptrC, 
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            cpp_vclVector_elem_abs<int>(ptrA, ptrC, device_flag);
+            cpp_vclVector_elem_abs<int>(ptrA, ptrC);
             return;
         case 6:
-            cpp_vclVector_elem_abs<float>(ptrA, ptrC, device_flag);
+            cpp_vclVector_elem_abs<float>(ptrA, ptrC);
             return;
         case 8:
-            cpp_vclVector_elem_abs<double>(ptrA, ptrC, device_flag);
+            cpp_vclVector_elem_abs<double>(ptrA, ptrC);
             return;
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
@@ -5534,17 +4320,16 @@ cpp_vclVector_elem_abs(
 SEXP
 cpp_vclVector_max(
     SEXP ptrA,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_vclVector_max<int>(ptrA, device_flag));
+            return wrap(cpp_vclVector_max<int>(ptrA));
         case 6:
-            return wrap(cpp_vclVector_max<float>(ptrA, device_flag));
+            return wrap(cpp_vclVector_max<float>(ptrA));
         case 8:
-            return wrap(cpp_vclVector_max<double>(ptrA, device_flag));
+            return wrap(cpp_vclVector_max<double>(ptrA));
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
     }
@@ -5554,17 +4339,16 @@ cpp_vclVector_max(
 SEXP
 cpp_vclVector_min(
     SEXP ptrA,
-    int device_flag,
     const int type_flag)
 {
     
     switch(type_flag) {
         case 4:
-            return wrap(cpp_vclVector_min<int>(ptrA, device_flag));
+            return wrap(cpp_vclVector_min<int>(ptrA));
         case 6:
-            return wrap(cpp_vclVector_min<float>(ptrA, device_flag));
+            return wrap(cpp_vclVector_min<float>(ptrA));
         case 8:
-            return wrap(cpp_vclVector_min<double>(ptrA, device_flag));
+            return wrap(cpp_vclVector_min<double>(ptrA));
         default:
             throw Rcpp::exception("unknown type detected for vclVector object!");
     }

@@ -1,6 +1,6 @@
 
 #include "gpuR/windows_check.hpp"
-#include <boost/algorithm/string.hpp>
+#include "gpuR/utils.hpp"
 //#include "gpuR/cl_helpers.hpp"
 
 // Use OpenCL with ViennaCL
@@ -17,92 +17,92 @@
 //using namespace cl;
 using namespace Rcpp;
 
+
 // [[Rcpp::export]]
-SEXP cpp_detectGPUs(SEXP platform_idx)
-{    
-    int device_count;
-    long current_context_id = viennacl::ocl::backend<>::current_context_id();
-    
-    // Select context used only for GPUs
-    long id = 999;
-    viennacl::ocl::switch_context(id);
+SEXP cpp_deviceType(SEXP platform_idx_, SEXP gpu_idx_)
+{
+    std::string device_type;
     
     // subtract one for zero indexing
-    unsigned int plat_idx = as<unsigned int>(platform_idx) - 1;
+    unsigned int plat_idx = as<unsigned int>(platform_idx_) - 1;
+    unsigned int gpu_idx = as<unsigned int>(gpu_idx_) - 1;  
     
     // Get available platforms
     typedef std::vector< viennacl::ocl::platform > platforms_type;
     platforms_type platforms = viennacl::ocl::get_platforms();
+    
+    if(platforms.size() == 0){
+        stop("No platforms found. Check OpenCL installation!");
+    }
+    
+    if (plat_idx + 1 > platforms.size()){
+        stop("platform index greater than number of platforms.");
+    }
+    
+    // Get device
+    viennacl::ocl::device working_device;
+    working_device = platforms[plat_idx].devices()[gpu_idx];
+
+    cl_device_type check = working_device.type(); 
+
+    if(check & CL_DEVICE_TYPE_CPU){
+	device_type = "cpu";
+    }else if(check & CL_DEVICE_TYPE_GPU){
+	device_type = "gpu";
+    }else if(check & CL_DEVICE_TYPE_ACCELERATOR){
+	device_type = "accelerator";
+    }else{
+	Rcpp::Rcout << "device found: " << std::endl;
+	Rcpp::Rcout << check << std::endl;
+	throw Rcpp::exception("unrecognized device detected");
+
+    }
    
-//    std::cout << "num platforms found" << std::endl;
-//    std::cout << platforms.size() << std::endl;
-    
-//    std::cout << "changing platform" << std::endl;
-    // Select the platform
-    viennacl::ocl::set_context_platform_index(id, plat_idx);
-    
-    // set device type
-    viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-    
-//    std::cout << "get devices" << std::endl;
-    // get the devices
-    std::vector< viennacl::ocl::device > devices;
-    devices = viennacl::ocl::current_context().devices();
-    
-//    std::cout << "num devices" << std::endl;
-//    std::cout << devices.size() << std::endl;
+    return(wrap(device_type));
+}
 
-    device_count = devices.size();
 
-    viennacl::ocl::switch_context(current_context_id);
+// [[Rcpp::export]]
+SEXP cpp_detectGPUs(SEXP platform_idx)
+{    
+    int device_count = 0;
+    
+    // Get available platforms
+    typedef std::vector< viennacl::ocl::platform > platforms_type;
+    platforms_type platforms = viennacl::ocl::get_platforms();
+    
+    typedef std::vector< viennacl::ocl::device > device_type;
+    device_type devices;
+    
+    if(Rf_isNull(platform_idx)){
+        for(unsigned int plat_idx=0; plat_idx < platforms.size(); plat_idx++){
+            
+            devices = platforms[plat_idx].devices();
+            for(unsigned int device_idx=0; device_idx < devices.size(); device_idx++){
+                if(devices[device_idx].type() & CL_DEVICE_TYPE_GPU){
+                    device_count++;
+                }
+            }
+        }
+    }else{
+        // subtract one for zero indexing
+        unsigned int plat_idx = as<unsigned int>(platform_idx) - 1;
+        
+        devices = platforms[plat_idx].devices();
+        for(unsigned int device_idx=0; device_idx < devices.size(); device_idx++){
+            if(devices[device_idx].type() & CL_DEVICE_TYPE_GPU){
+                device_count++;
+            }
+        }
+    }    
     
     return(wrap(device_count));
 }
 
-//// [[Rcpp::export]]
-//SEXP cpp_detectGPUs(SEXP platform_idx)
-//{
-//    // declarations
-//    cl_int err = 0;
-//    
-//    // subtract one for zero indexing
-//    unsigned int plat_idx = as<unsigned int>(platform_idx) - 1;
-//    
-//    // Get available platforms
-//    std::vector<Platform> platforms;
-//    getPlatforms(platforms); // cl_helpers.hpp
-//    
-//    if(platforms.size() == 0){
-//        stop("No platforms found. Check OpenCL installation!\n");
-//    } 
-//        
-//    if (plat_idx > platforms.size()){
-//        stop("platform index greater than number of platforms.");
-//    }
-//
-//    // Select the platform and create a context using this platform 
-//    // and the GPU
-//    cl_context_properties cps[3] = {
-//        CL_CONTEXT_PLATFORM,
-//        (cl_context_properties)(platforms[plat_idx])(),
-//        0
-//    };
-//    
-//    Context context = createContext(CL_DEVICE_TYPE_GPU, cps, err);
-//
-//    // Get a list of devices on this platform
-//    std::vector<Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-//    
-//    return(wrap(devices.size()));
-//}
 
 // [[Rcpp::export]]
 List cpp_gpuInfo(SEXP platform_idx_, SEXP gpu_idx_)
 {
-
-    // declarations and housekeeping
-    long current_context_id = viennacl::ocl::backend<>::current_context_id();
-    long id = 999;
     
     // subtract one for zero indexing
     unsigned int plat_idx = as<unsigned int>(platform_idx_) - 1;
@@ -116,22 +116,13 @@ List cpp_gpuInfo(SEXP platform_idx_, SEXP gpu_idx_)
         stop("No platforms found. Check OpenCL installation!");
     }
 
-    if (plat_idx > platforms.size()){
+    if (plat_idx + 1 > platforms.size()){
         stop("platform index greater than number of platforms.");
     }
     
-    // Select context used only for GPUs (999)
-    viennacl::ocl::switch_context(id);
-    
-    // Set the platform
-    viennacl::ocl::set_context_platform_index(id, plat_idx);
-    
-    // Make sure only GPUs
-    viennacl::ocl::set_context_device_type(id, viennacl::ocl::gpu_tag());
-    
     // Get device
     viennacl::ocl::device working_device;
-    working_device = viennacl::ocl::current_context().devices()[gpu_idx];
+    working_device = platforms[plat_idx].devices()[gpu_idx];
     
     std::string deviceName = working_device.name();
     std::string deviceVendor = working_device.vendor();
@@ -149,10 +140,8 @@ List cpp_gpuInfo(SEXP platform_idx_, SEXP gpu_idx_)
 
 
     std::vector<std::string> extensionsVector;
-    boost::split(extensionsVector, deviceExtensions, boost::is_any_of(" "));
+    extensionsVector = split(deviceExtensions, ' ');
     std::string available_str = (available == 1) ? "yes" : "no";
-    
-    viennacl::ocl::switch_context(current_context_id);
     
     return List::create(Named("deviceName") = deviceName,
                         Named("deviceVendor") = deviceVendor,
@@ -169,14 +158,11 @@ List cpp_gpuInfo(SEXP platform_idx_, SEXP gpu_idx_)
                         Named("double_support") = double_support);
 }
 
+
 // [[Rcpp::export]]
 List cpp_cpuInfo(SEXP platform_idx_, SEXP cpu_idx_)
 {
 
-    // declarations and housekeeping
-    long current_context_id = viennacl::ocl::backend<>::current_context_id();
-    long id = 998;
-    
     // subtract one for zero indexing
     unsigned int plat_idx = as<unsigned int>(platform_idx_) - 1;
     unsigned int cpu_idx = as<unsigned int>(cpu_idx_) - 1;   
@@ -193,18 +179,15 @@ List cpp_cpuInfo(SEXP platform_idx_, SEXP cpu_idx_)
         stop("platform index greater than number of platforms.");
     }
     
-    // Select context used only for GPUs (999)
-    viennacl::ocl::switch_context(id);
-    
-    // Set the platform
-    viennacl::ocl::set_context_platform_index(id, plat_idx);
-    
-    // Make sure only GPUs
-    viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
-    
     // Get device
     viennacl::ocl::device working_device;
-    working_device = viennacl::ocl::current_context().devices()[cpu_idx];
+    working_device = platforms[plat_idx].devices()[cpu_idx];
+    
+    if(working_device.type() & CL_DEVICE_TYPE_CPU){
+	// do nothing
+    }else{
+        stop("device is not a CPU");
+    }
     
     std::string deviceName = working_device.name();
     std::string deviceVendor = working_device.vendor();
@@ -218,13 +201,11 @@ List cpp_cpuInfo(SEXP platform_idx_, SEXP cpu_idx_)
     cl_uint maxWorkItemDim = working_device.max_work_item_dimensions();
     std::vector<std::size_t> maxWorkItemSizes = working_device.max_work_item_sizes();
     std::string deviceExtensions = working_device.extensions();
-
+    bool double_support = working_device.double_support();
 
     std::vector<std::string> extensionsVector;
-    boost::split(extensionsVector, deviceExtensions, boost::is_any_of(" "));
+    extensionsVector = split(deviceExtensions, ' ');
     std::string available_str = (available == 1) ? "yes" : "no";
-    
-    viennacl::ocl::switch_context(current_context_id);
     
     return List::create(Named("deviceName") = deviceName,
                         Named("deviceVendor") = deviceVendor,
@@ -237,7 +218,8 @@ List cpp_cpuInfo(SEXP platform_idx_, SEXP cpu_idx_)
                         Named("localMem") = localMem,
                         Named("maxAllocatableMem") = maxAlocatableMem,
                         Named("available") = available_str,
-                        Named("deviceExtensions") = extensionsVector);
+                        Named("deviceExtensions") = extensionsVector,
+                        Named("double_support") = double_support);
 }
 
 //// [[Rcpp::export]]
@@ -340,18 +322,20 @@ SEXP currentDevice()
 {
     std::string device_type;
     
-    switch(viennacl::ocl::current_device().type()){
-                case 2: 
-                    device_type = "cpu";
-                    break;
-                case 4: 
-                    device_type = "gpu";
-                    break;
-                case 8: 
-                    device_type = "accelerator";
-                    break;
-                default: throw Rcpp::exception("unrecognized device detected");
-            }
+    cl_device_type check = viennacl::ocl::current_device().type(); 
+
+    if(check & CL_DEVICE_TYPE_CPU){
+	device_type = "cpu";
+    }else if(check & CL_DEVICE_TYPE_GPU){
+	device_type = "gpu";
+    }else if(check & CL_DEVICE_TYPE_ACCELERATOR){
+	device_type = "accelerator";
+    }else{
+	Rcpp::Rcout << "device found: " << std::endl;
+	Rcpp::Rcout << check << std::endl;
+	throw Rcpp::exception("unrecognized device detected");
+
+    }
             
     return List::create(Named("device") = wrap(viennacl::ocl::current_context().current_device().name()),
                         Named("device_index") = wrap(viennacl::ocl::current_context().current_device_id() + 1),
@@ -399,34 +383,36 @@ SEXP currentDevice()
 // [[Rcpp::export]]
 SEXP cpp_detectCPUs(SEXP platform_idx)
 {    
-    int device_count;
-    long current_context_id = viennacl::ocl::backend<>::current_context_id();
-    
-    // Select context used only for CPUs
-    long id = 998;
-    viennacl::ocl::switch_context(id);
-
-    // subtract one for zero indexing
-    unsigned int plat_idx = as<unsigned int>(platform_idx) - 1;
+    int device_count = 0;
     
     // Get available platforms
     typedef std::vector< viennacl::ocl::platform > platforms_type;
     platforms_type platforms = viennacl::ocl::get_platforms();
-   
-    // Select the platform
-    viennacl::ocl::set_context_platform_index(id, plat_idx);
     
-    // filter to only CPUs
-    viennacl::ocl::set_context_device_type(id, viennacl::ocl::cpu_tag());
+    typedef std::vector< viennacl::ocl::device > device_type;
+    device_type devices;
     
-    // get the devices
-    std::vector< viennacl::ocl::device > devices;
-    devices = viennacl::ocl::current_context().devices();
-    
-    device_count = devices.size();
-
-    // switch back to original context
-    viennacl::ocl::switch_context(current_context_id);
+    if(Rf_isNull(platform_idx)){
+        for(unsigned int plat_idx=0; plat_idx < platforms.size(); plat_idx++){
+            
+            devices = platforms[plat_idx].devices();
+            for(unsigned int device_idx=0; device_idx < devices.size(); device_idx++){
+                if(devices[device_idx].type() & CL_DEVICE_TYPE_CPU){
+                    device_count++;
+                }
+            }
+        }
+    }else{
+        // subtract one for zero indexing
+        unsigned int plat_idx = as<unsigned int>(platform_idx) - 1;
+        
+        devices = platforms[plat_idx].devices();
+        for(unsigned int device_idx=0; device_idx < devices.size(); device_idx++){
+            if(devices[device_idx].type() & CL_DEVICE_TYPE_CPU){
+                device_count++;
+            }
+        }
+    }    
     
     return(wrap(device_count));
 }
