@@ -3,9 +3,8 @@ gpuR
 ========
 
 This package is currently only functional for Linux systems.
-In order for it to work you will need to install at least
-an OpenCL driver for your specific GPU.
-
+In order for it to work you will need to install a
+SDK for your respective gpu(s) and the opencl-headers.
 Follow your vendor specific instructions to install.
 
 The installation of this package is OS specific.  For detailed

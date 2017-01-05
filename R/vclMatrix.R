@@ -28,7 +28,11 @@ setMethod('vclMatrix',
           signature(data = 'matrix'),
           function(data, type=NULL, ctx_id=NULL){
               
-              if (is.null(type)) type <- typeof(data)
+              if (is.null(type)) {
+                  type <- switch(typeof(data),
+                                 "integer" = "integer",
+                                 getOption("gpuR.default.type"))
+              }
 
               device <- currentDevice()
               

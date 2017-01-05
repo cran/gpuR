@@ -1,7 +1,7 @@
-2937bda6571cfcf036e2226e397e7a9a *DESCRIPTION
-11c53468ee3e32eb7ba7adda19643c23 *INSTALL
+b3762996473d41be908da6991ee3a8ee *DESCRIPTION
+0bbaf3dc1d93af500e9d1238614e2ca4 *INSTALL
 78b02f58938152f89432bdc0a5f2b099 *NAMESPACE
-751b7426d3032b16cc8543a0b7fbdb3f *R/RcppExports.R
+8a2fdf3706dc482a9cdd38ccb700ff79 *R/RcppExports.R
 a24337d0bf324ffa9b1b7a3343b0bff3 *R/asserts.R
 c6bafe3b845c964d368684d5e221c8bc *R/chol.R
 ff4bb8c4e09b7bbcb114560734c24480 *R/class-gpuMatrix.R
@@ -11,7 +11,7 @@ c724e473edb05783cb82a7e0c4239a3a *R/class-gpuVector.R
 0178c7a55fbbb069f3d17ffffabd04d7 *R/classes.R
 7b2146fbfdad78a9cdea7721835c4f2f *R/eigen.R
 eb8c28872aa336123829601d057575cc *R/generics.R
-9893504e8c2bc997087c3f0d0d452136 *R/gpuMatrix.R
+be66795554cda3d1a43766ede61356c8 *R/gpuMatrix.R
 7389f798df3fe95889ec29525ec4c87c *R/gpuVector.R
 2c6c9246c9ce71c20f75d8e061904217 *R/hello-gpuR.R
 bf93d2bf33d3d43ccad03c0f76954004 *R/methods-gpuVector.R
@@ -25,7 +25,7 @@ d8cb9867347e54165a8217e008ff418c *R/svd.R
 a69d37561f9e2d366ecee669fdaebf1d *R/test_utils.R
 e8dfd9284879841f34883571f05b3e6f *R/typeof.R
 c8f75b2ed37cfbb660d5f4f5c1c3d292 *R/utils.R
-8ebfa62d08dc631cd0c104b3693f1471 *R/vclMatrix.R
+0933dfc092adbc846e639bb17e62ed61 *R/vclMatrix.R
 4d883fc735b35b3b35dc8768ae9ef2cd *R/vclVector.R
 aa62c540688483cca702a774fb4a1844 *R/wrappers-gpuVector.R
 47904a56cb9b94cf9489f4e33e3185a8 *R/wrappers-utils.R
@@ -37,7 +37,7 @@ aa34d0150b7cfdedc870ee70d7738087 *R/wrappers.R
 93d7b42634575038fe4966b8e8f3a083 *build/vignette.rds
 3b5c789d57809f1e62837b65e5040282 *cleanup
 9f1b9a5ec5ff66371985b37c1d099e09 *cleanup.win
-a05864e81edcf80a551da6785e33f00b *configure
+c0c5196ed4b59d75cae0d328e6a4f361 *configure
 2dee3dfd98a46b020f529f5bee469b93 *inst/CL/basic_gemm.cl
 c45d1a4fbc1675d70df9a97c76a133fe *inst/CL/dcholesky.cl
 278de5673df3b648f86a661d00344521 *inst/CL/dset_row_order.cl
@@ -46,7 +46,7 @@ e7215f91eef00d574a2b8a18ee3ae416 *inst/CL/fset_row_order.cl
 c5e4f0463127788a25766ca99005eef1 *inst/NEWS.Rd
 a021aaf6656480306616049582f9cc21 *inst/doc/gpuR.R
 435a272304b5f595e1d0f2f367feb8f2 *inst/doc/gpuR.Rnw
-f6895efd49873d43334b306249223f22 *inst/doc/gpuR.pdf
+ffa5281214dc6d20207fa04fbc00703c *inst/doc/gpuR.pdf
 557e4785d3cf96b42de7ac40058d70d4 *inst/include/CL/cl.h
 f2c8bee05e5a84ea8282b7b95646c515 *inst/include/CL/cl.hpp
 64634186074ea8570ea24ce50b328968 *inst/include/CL/cl_d3d10.h
@@ -206,7 +206,7 @@ d1b26b3ffa649b41e5538f08cb02a5ce *man/vclMatrix.colSums.Rd
 dfc8c55ac014806e8c0d89fb6d3608fb *man/vclVector-class.Rd
 be45328871a2187c68ee0bdc2f2288da *man/vclVector-methods.Rd
 2c58793b41e42aec509404aa4e019131 *src/Makevars.win
-6253fad7067dd14c3917096ab5b60c63 *src/RcppExports.cpp
+45ae3b19cb5b209f73d1d28c62d73150 *src/RcppExports.cpp
 7df4192d7d8ee4dc4651da53967eaf0f *src/chol.cpp
 c6aaa4008feb8c6008242d46b0fb9946 *src/context.cpp
 e291c40919fa4139631a474d4542da64 *src/device.cpp
@@ -226,7 +226,7 @@ e0d4cf418a0996712fd78d5a316feb5f *src/utils-vcl.cpp
 9f85c1f2c39cc7230476f6a57be387b6 *src/vienna_stats.cpp
 97a8296be82ada4bed5d0d600dbbcc40 *src/vienna_svd.cpp
 4815945b25e913b1decf3720b3d229ab *tests/testthat.R
-62927e4d3b4d2724186b549f81aea3f8 *tests/testthat/test_cpu_deepcopy.R
+ff9a16f2a7fdaf2944f6340397c2b60f *tests/testthat/test_cpu_deepcopy.R
 c413fa9ec7716f479772ee34001b1e95 *tests/testthat/test_cpu_gpuMatrixBlock_algebra.R
 7a5d7d4aca15eacd69c9ea7e677af1d1 *tests/testthat/test_cpu_gpuMatrix_algebra.R
 480a601fd549f1810d1a1dae3dac024a *tests/testthat/test_cpu_gpuMatrix_chol.R
@@ -263,7 +263,7 @@ c5f78c30ba4ade13fb06065bb90d5474 *tests/testthat/test_cpu_vclMatrtix_math.R
 b420103021f25c4adbba1ee025193b92 *tests/testthat/test_cpu_vclVector_classes.R
 c8ad1ee228c4b022c6f9e988b46b4a3b *tests/testthat/test_cpu_vclVector_math.R
 1f35d0cd07ecc3f1146eb1d6acc2e8f2 *tests/testthat/test_cpu_vclVector_utils.R
-d2cb5824a5ea3adcc2c87fcce23b4347 *tests/testthat/test_deepcopy.R
+76ccc57c375ccf89081550de2e526c93 *tests/testthat/test_deepcopy.R
 c591baab1d5c12540ffc03602df6e924 *tests/testthat/test_gpuMatrixBlock_algebra.R
 e6e0fdcfcad8cbb75bc985e01302477c *tests/testthat/test_gpuMatrix_algebra.R
 266ab5bf97425d8ed802c85a9342f304 *tests/testthat/test_gpuMatrix_chol.R
