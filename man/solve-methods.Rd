@@ -2,10 +2,10 @@
 % Please edit documentation in R/solve.R
 \docType{methods}
 \name{solve,vclMatrix,vclMatrix-method}
+\alias{solve,vclMatrix,vclMatrix-method}
+\alias{solve,vclMatrix,missing-method}
 \alias{solve,gpuMatrix,gpuMatrix-method}
 \alias{solve,gpuMatrix,missing-method}
-\alias{solve,vclMatrix,missing-method}
-\alias{solve,vclMatrix,vclMatrix-method}
 \title{Solve a System of Equations for gpuR objects}
 \usage{
 \S4method{solve}{vclMatrix,vclMatrix}(a, b, ...)
@@ -27,10 +27,9 @@
 A gpuR object
 }
 \description{
-This funciton solves the equation \code{a \%*\% x = b} for 
+This function solves the equation \code{a \%*\% x = b} for 
 \code{x}, where \code{b} can be either a vector or a matrix.
 }
 \author{
 Charles Determan Jr.
 }
-

@@ -3,8 +3,8 @@
 \docType{methods}
 \name{block}
 \alias{block}
-\alias{block,gpuMatrix,integer,integer,integer,integer-method}
 \alias{block,vclMatrix,integer,integer,integer,integer-method}
+\alias{block,gpuMatrix,integer,integer,integer,integer-method}
 \title{Matrix Blocks}
 \usage{
 block(object, rowStart, rowEnd, colStart, colEnd)
@@ -36,7 +36,7 @@ points to a contiguous submatrix of a \code{\link{gpuMatrix}} or
 }
 \details{
 This function allows a user to create a gpuR matrix object that
-references a continous subset of columns and rows of another gpuR matrix
+references a continuous subset of columns and rows of another gpuR matrix
 object without a copy.  
 
 NOTE - this means that altering values in a matrix block object will alter
@@ -45,4 +45,3 @@ values in the source matrix.
 \author{
 Charles Determan Jr.
 }
-

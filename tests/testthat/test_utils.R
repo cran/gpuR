@@ -1,6 +1,13 @@
 library(gpuR)
 context("Utility Functions")
 
+
+if(detectGPUs() >= 1){
+    current_context <- set_device_context("gpu")    
+}else{
+    current_context <- currentContext()
+}
+
 test_that("detectGPUs() accepts appropriate input", {
     
     # should function regardless of GPUs
@@ -12,6 +19,7 @@ test_that("detectGPUs() accepts appropriate input", {
     expect_error(detectGPUs(0))
     expect_error(detectGPUs(2))
     expect_error(detectGPUs(c(2,3)))
+    expect_error(detectGPUs(7))
 })
 
 test_that("gpuInfo() accepts appropriate input", {
@@ -28,6 +36,26 @@ test_that("gpuInfo() accepts appropriate input", {
     expect_is(gpuInfo(), "list")
 })
 
+setContext(current_context)
+
+current_context <- set_device_context("cpu")
+
+test_that("cpuInfo() accepts appropriate input", {
+    
+    has_cpu_skip()
+    
+    expect_error(cpuInfo(0, 0))
+    expect_error(cpuInfo(2, 2))
+    expect_error(cpuInfo(0, 1))
+    expect_error(cpuInfo(1, 0))
+    expect_error(cpuInfo(c(2,3), 1))
+    expect_error(cpuInfo(1, detectCPUs() + 1))
+    
+    expect_is(cpuInfo(), "list")
+})
+
+setContext(current_context)
+
 test_that("detectCPUs() accepts correct input", {
     
     # should function regardless of CPUs
@@ -39,6 +67,7 @@ test_that("detectCPUs() accepts correct input", {
     expect_error(detectCPUs(0))
     expect_error(detectCPUs(2))
     expect_error(detectCPUs(c(2,3)))
+    expect_error(detectCPUs(7))
 })
 
 test_that("contexts behave correctly", {

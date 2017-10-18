@@ -3,7 +3,7 @@
 #' from \code{gpuVector}
 #' @param object An object that is or can be converted to a 
 #' \code{vector} object
-#' @param type A character string specifying the type of gpuMatrix.  Default
+#' @param type A character string specifying the type of gpuVector.  Default
 #' is NULL where type is inherited from the source data type.
 #' @return A gpuVector object
 #' @docType methods
@@ -13,6 +13,24 @@
 setGeneric("as.gpuVector", function(object, type){
     standardGeneric("as.gpuVector")
 })
+
+#' @title Convert object to a vclVector
+#' @description Construct a vclVector of a class that inherits
+#' from \code{vclVector}
+#' @param object An object that is or can be converted to a 
+#' \code{vector} object
+#' @param type A character string specifying the type of vclVector.  Default
+#' is NULL where type is inherited from the source data type.
+#' @param ... Additional arguments to as.vclVector methods
+#' @return A vclVector object
+#' @docType methods
+#' @rdname as.vclVector-methods
+#' @author Charles Determan Jr.
+#' @export
+setGeneric("as.vclVector", function(object, type, ...){
+    standardGeneric("as.vclVector")
+})
+
 
 #' @title Convert object to a gpuMatrix
 #' @description Construct a gpuMatrix of a class that inherits
@@ -39,7 +57,7 @@ setGeneric("as.gpuMatrix", function(object, type){
 #' @param start An integer indicating the start of slice
 #' @param end An integer indicating the end of slice
 #' @details This function allows a user to create a gpuR vector object that
-#' references a continous subset of columns and rows of another gpuR vector
+#' references a continuous subset of columns and rows of another gpuR vector
 #' object without a copy.  
 #' 
 #' NOTE - this means that altering values in a vector slice object will alter
@@ -65,7 +83,7 @@ setGeneric("slice", function(object, start, end){
 #' @param colStart An integer indicating the first column of block
 #' @param colEnd An integer indicating the last column of block
 #' @details This function allows a user to create a gpuR matrix object that
-#' references a continous subset of columns and rows of another gpuR matrix
+#' references a continuous subset of columns and rows of another gpuR matrix
 #' object without a copy.  
 #' 
 #' NOTE - this means that altering values in a matrix block object will alter

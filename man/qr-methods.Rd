@@ -27,7 +27,7 @@ A \code{list} containing the QR decomposition of the matrix of class
 }
 }
 \description{
-\code{qr} computs the QR decomposition of a gpuR matrix
+\code{qr} computes the QR decomposition of a gpuR matrix
 }
 \note{
 This an S3 generic of \link[base]{qr}.  The default continues
@@ -38,10 +38,9 @@ as \link[base]{qr}.  The matrix storage format applied herein doesn't match
 the base compact form.  The method also doesn't return \code{qraux}, 
 \code{rank}, or \code{pivot} but instead returns \code{betas}
 }
-\author{
-Charles Determan Jr.
-}
 \seealso{
 \link[base]{qr}
 }
-
+\author{
+Charles Determan Jr.
+}
