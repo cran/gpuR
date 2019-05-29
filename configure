@@ -13,7 +13,7 @@ BUILD_LIB="BUILD_LIB="
 
 if [ ! -z "OPENCL_FLAGS" ]; then
     echo "OPENCL_FLAGS not set, using default -DCL_HPP_MINIMUM_OPENCL_VERSION=110 -DCL_USE_DEPRECATED_OPENCL_1_2_APIS  -DCL_HPP_TARGET_OPENCL_VERSION=120"
-    CPPFLAGS="${CPPFLAGS} -DCL_HPP_MINIMUM_OPENCL_VERSION=110 -DCL_USE_DEPRECATED_OPENCL_1_2_APIS -DCL_HPP_TARGET_OPENCL_VERSION=120 -fPIC"
+    CPPFLAGS="${CPPFLAGS} -DCL_HPP_MINIMUM_OPENCL_VERSION=110 -DCL_USE_DEPRECATED_OPENCL_1_2_APIS -DCL_HPP_TARGET_OPENCL_VERSION=120"
 else
     echo "Using OPENCL_FLAGS = " $OPENCL_FLAGS
 fi
@@ -180,7 +180,7 @@ echo "${LIBS}" >> src/Makevars
 echo "${BUILD_LIB}" >> src/Makevars
 printf '\n$(SHLIB): $(BUILD_LIB)\n\n' >> src/Makevars
 printf '../inst/include/loader/libOpenCL.a:\n' >> src/Makevars
-printf '\tcd ../inst/include/loader/ && $(MAKE) libOpenCL.a \\\n' >> src/Makevars
+printf '\tcd ../inst/include/loader/ && mkdir -p .$(R_ARCH) && $(MAKE) libOpenCL.a \\\n' >> src/Makevars
 printf '\tCC="$(CC)" CFLAGS="$(ALL_CFLAGS)" AR="$(AR)" RM="$(RM)" \\\n' >> src/Makevars
 printf '\tICD_OS=icd_linux\n' >> src/Makevars
 

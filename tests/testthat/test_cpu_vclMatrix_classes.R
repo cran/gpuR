@@ -11,35 +11,35 @@ v <- rnorm(100)
 vi <- seq.int(100)
 
 
-test_that("CPU vclMatrix complex float class initializer" ,{
-    
-    has_cpu_skip()
-    
-    vclDc <- vclMatrix(Dc, type="fcomplex")
-    
-    expect_is(vclDc, "cvclMatrix")
-    expect_equal(vclDc[], Dc, tolerance=1e-07,
-                 info="vcl complex float matrix elements not equivalent")
-    expect_equal(dim(vclDc), dim(Dc))
-    expect_equal(ncol(vclDc), ncol(Dc))
-    expect_equal(nrow(vclDc), nrow(Dc))
-    expect_equal(typeof(vclDc), "fcomplex")
-})
-
-test_that("CPU vclMatrix complex double class initializer" ,{
-    
-    has_cpu_skip()
-    
-    vclDc <- vclMatrix(Dc, type = "dcomplex")
-    
-    expect_is(vclDc, "zvclMatrix")
-    expect_equal(vclDc[], Dc, tolerance=.Machine$double.eps ^ 0.5, 
-                 info="vcl complex Dcouble matrix elements not equivalent")
-    expect_equal(dim(vclDc), dim(Dc))
-    expect_equal(ncol(vclDc), ncol(Dc))
-    expect_equal(nrow(vclDc), nrow(Dc))
-    expect_equal(typeof(vclDc), "dcomplex")
-})
+# test_that("CPU vclMatrix complex float class initializer" ,{
+#     
+#     has_cpu_skip()
+#     
+#     vclDc <- vclMatrix(Dc, type="fcomplex")
+#     
+#     expect_is(vclDc, "cvclMatrix")
+#     expect_equal(vclDc[], Dc, tolerance=1e-07,
+#                  info="vcl complex float matrix elements not equivalent")
+#     expect_equal(dim(vclDc), dim(Dc))
+#     expect_equal(ncol(vclDc), ncol(Dc))
+#     expect_equal(nrow(vclDc), nrow(Dc))
+#     expect_equal(typeof(vclDc), "fcomplex")
+# })
+# 
+# test_that("CPU vclMatrix complex double class initializer" ,{
+#     
+#     has_cpu_skip()
+#     
+#     vclDc <- vclMatrix(Dc, type = "dcomplex")
+#     
+#     expect_is(vclDc, "zvclMatrix")
+#     expect_equal(vclDc[], Dc, tolerance=.Machine$double.eps ^ 0.5, 
+#                  info="vcl complex Dcouble matrix elements not equivalent")
+#     expect_equal(dim(vclDc), dim(Dc))
+#     expect_equal(ncol(vclDc), ncol(Dc))
+#     expect_equal(nrow(vclDc), nrow(Dc))
+#     expect_equal(typeof(vclDc), "dcomplex")
+# })
 
 test_that("CPU vclMatrix integer class initializer" ,{
     
@@ -75,7 +75,7 @@ test_that("CPU vclMatrix double class initializer" ,{
     
     has_cpu_skip()
     
-    vclD <- vclMatrix(D)
+    vclD <- vclMatrix(D, type = "double")
     
     expect_is(vclD, "dvclMatrix")
     expect_equal(vclD[], D, tolerance=.Machine$double.eps ^ 0.5, 
@@ -146,9 +146,9 @@ test_that("CPU vclMatrix integer scalar initializers", {
     
     expect_is(ivclA, "ivclMatrix")
     expect_equivalent(ivclA[], Ai,
-                      "scalar integer elements not equivalent")
+                      info = "scalar integer elements not equivalent")
     expect_equivalent(dim(Ai), dim(ivclA),
-                 "scalar integer dimensions not equivalent")
+                 info = "scalar integer dimensions not equivalent")
 })
 
 test_that("CPU vclMatrix float scalar initializers", {

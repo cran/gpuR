@@ -7,444 +7,6 @@ as.matrix.vclMatrix <- function(x, ...){
 } 
 
 
-#' @rdname extract-methods
-#' @export
-setMethod("[",
-          signature(x = "vclMatrix", i = "missing", j = "missing", drop = "missing"),
-          function(x, i, j, drop) {
-              
-              Rmat <- switch(typeof(x),
-                     "integer" = VCLtoMatSEXP(x@address, 4L),
-                     "float" = VCLtoMatSEXP(x@address, 6L),
-                     "double" = VCLtoMatSEXP(x@address, 8L),
-                     "fcomplex" = VCLtoMatSEXP(x@address, 10L),
-                     "dcomplex" = VCLtoMatSEXP(x@address, 12L),
-                     stop("unsupported matrix type")
-              )
-              
-	      return(Rmat)
-
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[",
-          signature(x = "vclMatrix", i = "missing", j = "numeric", drop="missing"),
-          function(x, i, j, drop) {
-              
-              type <- switch(typeof(x),
-                             "integer" = 4L,
-                             "float" = 6L,
-                             "double" = 8L,
-                             stop("type not recognized")
-              )
-              
-              if(length(j) > 1){
-                  
-                  out <- matrix(nrow= nrow(x), ncol = length(j))
-                  
-                  for(c in seq_along(j)){
-                    out[,c] <- vclGetCol(x@address, j[c], type, x@.context_index - 1)    
-                  }
-                  
-                  return(out)
-                  
-              }else{
-                  return(vclGetCol(x@address, j, type, x@.context_index - 1))
-              }
-          })
-
-
-#' @rdname extract-methods
-#' @export
-setMethod("[",
-          signature(x = "vclMatrix", i = "numeric", j = "missing", drop="missing"),
-          function(x, i, j, ..., drop) {
-              
-              if(tail(i, 1) > length(x)){
-                  stop("Index out of bounds")
-              }
-              
-              type <- switch(typeof(x),
-                             "integer" = 4L,
-                             "float" = 6L,
-                             "double" = 8L,
-                             stop("type not recognized")
-              )
-              
-              if(nargs() == 3){
-                  if(length(i) > 1){
-                      out <- matrix(nrow = length(i), ncol = ncol(x))
-                      
-                      for(r in seq_along(i)){
-                          out[r,] <- vclGetRow(x@address, i[r], type, x@.context_index - 1)
-                      }
-                      
-                      return(out)
-                      
-                  }else{
-                      return(vclGetRow(x@address, i, type, x@.context_index - 1))    
-                  }
-                  
-              }else{
-                  
-                  output <- vector(ifelse(type == 4L, "integer", "numeric"), length(i))
-                  
-                  nr <- nrow(x)
-                  col_idx <- 1
-                  for(elem in seq_along(i)){
-                      if(i[elem] > nr){
-                          tmp <- ceiling(i[elem]/nr)
-                          if(tmp != col_idx){
-                              col_idx <- tmp
-                          }
-                          
-                          row_idx <- i[elem] - (nr * (col_idx - 1))
-                          
-                      }else{
-                          row_idx <- i[elem]
-                      }
-                      
-                      output[elem] <- vclGetElement(x@address, row_idx, col_idx, type)
-                  }
-                  
-                  return(output)
-              }
-              
-              # Rmat <- switch(typeof(x),
-              #        "integer" = vclGetRow(x@address, i, 4L, x@.context_index - 1),
-              #        "float" = vclGetRow(x@address, i, 6L, x@.context_index - 1),
-              #        "double" = vclGetRow(x@address, i, 8L, x@.context_index - 1),
-              #        stop("unsupported matrix type")
-              # )
-              
-	      # return(Rmat)
-
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[",
-          signature(x = "vclMatrix", i = "numeric", j = "numeric", drop="missing"),
-          function(x, i, j, drop) {
-              
-              type <- switch(typeof(x),
-                             "integer" = 4L,
-                             "float" = 6L,
-                             "double" = 8L,
-                             stop("type not recognized")
-              )
-              
-              if(length(i) > 1 || length(j) > 1){
-                  out <- matrix(nrow = length(i), ncol = length(j))
-                  
-                  for(r in seq_along(i)){
-                      for(c in seq_along(j)){
-                          out[r,c] <- vclGetElement(x@address, i[r], j[c], type)
-                      }
-                  }
-                  
-                  return(out)
-              }else{
-                  return(vclGetElement(x@address, i, j, type))
-              }
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "numeric", value = "numeric"),
-          function(x, i, j, value) {
-              
-          	if(j > ncol(x)){
-          		stop("column index exceeds number of columns")
-          	}
-          	
-          	if(length(value) > 1){
-          		
-          		if(length(value) != nrow(x)){
-          			stop("number of items to replace is not a multiple of replacement length")
-          		}
-          		
-          		switch(typeof(x),
-          					 "float" = vclSetCol(x@address, j, value, 6L),
-          					 "double" = vclSetCol(x@address, j, value, 8L),
-          					 stop("unsupported matrix type")
-          		)
-          		
-          	}else{
-          		switch(typeof(x),
-          			   "float" = vclFillCol(x@address, j, value, x@.context_index, 6L),
-          			   "double" = vclFillCol(x@address, j, value, x@.context_index, 8L),
-          			   stop("unsupported matrix type")
-          		)
-          	}
-              
-              
-              return(x)
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "ivclMatrix", i = "missing", j = "numeric", value = "integer"),
-          function(x, i, j, value) {
-              
-              if(length(value) != nrow(x)){
-                  stop("number of items to replace is not a multiple of replacement length")
-              }
-              
-              if(j > ncol(x)){
-                  stop("column index exceeds number of columns")
-              }
-
-              switch(typeof(x),
-                     "integer" = vclSetCol(x@address, j, value, 4L),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "numeric", j = "missing", value = "numeric"),
-          function(x, i, j, ..., value) {
-              
-              assert_all_are_in_closed_range(i, lower = 1, upper = nrow(x))
-              
-              type <- switch(typeof(x),
-                             "integer" = 4L,
-                             "float" = 6L,
-                             "double" = 8L,
-                             stop("type not recognized")
-              )
-              
-              # print(nargs())
-              
-              if(nargs() == 4){
-                  if(length(value) != ncol(x)){
-                      stop("number of items to replace is not a multiple of replacement length")
-                  }
-                  
-                  vclSetRow(x@address, i, value, type)
-                  
-              }else{
-                  if(length(value) != length(i)){
-                      if(length(value) == 1){
-                          value <- rep(value, length(i))
-                      }else{
-                          stop("number of items to replace is not a multiple of replacement length")
-                      }
-                  }
-                  
-                  nr <- nrow(x)
-                  col_idx <- 1
-                  for(elem in seq_along(i)){
-                      if(i[elem] > nr){
-                          tmp <- ceiling(i[elem]/nr)
-                          if(tmp != col_idx){
-                              col_idx <- tmp
-                          }
-                          
-                          row_idx <- i[elem] - (nr * (col_idx - 1))
-                          
-                      }else{
-                          row_idx <- i[elem]
-                      }
-                      
-                      # print(row_idx)
-                      # print(col_idx)
-                      
-                      vclSetElement(x@address, row_idx, col_idx, value[elem], type)
-                  }
-              }
-              
-# 	      if(length(value) != ncol(x)){
-# 	          stop("number of items to replace is not a multiple of replacement length")
-# 	      }
-#               
-#           if(i > nrow(x)){
-#               stop("row index exceeds number of rows")
-#           }
-#           
-#           switch(typeof(x),
-#                  "float" = vclSetRow(x@address, i, value, 6L),
-#                  "double" = vclSetRow(x@address, i, value, 8L),
-#                  stop("unsupported matrix type")
-#           )
-          
-          return(x)
-      })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "ivclMatrix", i = "numeric", j = "missing", value = "integer"),
-          function(x, i, j, value) {
-              
-              if(length(value) != ncol(x)){
-                  stop("number of items to replace is not a multiple of replacement length")
-              }
-              
-              if(i > nrow(x)){
-                  stop("row index exceeds number of rows")
-              }
-
-              switch(typeof(x),
-                     "integer" = vclSetRow(x@address, i, value, 4L),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "numeric", j = "numeric", value = "numeric"),
-          function(x, i, j, value) {
-              
-              assert_all_are_in_closed_range(i, lower = 1, upper=nrow(x))
-              assert_all_are_in_closed_range(j, lower = 1, upper=ncol(x))
-	      assert_is_scalar(value)
-
-              switch(typeof(x),
-                     "float" = vclSetElement(x@address, i, j, value, 6L),
-                     "double" = vclSetElement(x@address, i, j, value, 8L),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "ivclMatrix", i = "numeric", j = "numeric", value = "integer"),
-          function(x, i, j, value) {
-              
-              assert_all_are_in_closed_range(i, lower = 1, upper=nrow(x))
-              assert_all_are_in_closed_range(j, lower = 1, upper=ncol(x))
-              assert_is_scalar(value)
-              
-              switch(typeof(x),
-                     "integer" = vclSetElement(x@address, i, j, value, 4L),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "missing", value = "matrix"),
-          function(x, i, j, value) {
-              
-              assert_is_matrix(value)
-              
-              switch(typeof(x),
-                     "integer" = vclSetMatrix(x@address, value, 4L, x@.context_index - 1),
-                     "float" = vclSetMatrix(x@address, value, 6L, x@.context_index - 1),
-                     "double" = vclSetMatrix(x@address, value, 8L, x@.context_index - 1),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "missing", value = "vclMatrix"),
-          function(x, i, j, value) {
-              
-              switch(typeof(x),
-                     "integer" = vclSetVCLMatrix(x@address, value@address, 4L, x@.context_index - 1),
-                     "float" = vclSetVCLMatrix(x@address, value@address, 6L, x@.context_index - 1),
-                     "double" = vclSetVCLMatrix(x@address, value@address, 8L, x@.context_index - 1),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "numeric", value = "vclMatrix"),
-          function(x, i, j, value) {
-              
-              start = head(j, 1) - 1
-              end = tail(j, 1)
-              
-              switch(typeof(x),
-                     "integer" = vclMatSetVCLCols(x@address, value@address, start, end, 4L, x@.context_index - 1),
-                     "float" = vclMatSetVCLCols(x@address, value@address, start, end, 6L, x@.context_index - 1),
-                     "double" = vclMatSetVCLCols(x@address, value@address, start, end, 8L, x@.context_index - 1),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "missing", value = "numeric"),
-          function(x, i, j, value) {
-              
-              assert_is_scalar(value)
-              
-              switch(typeof(x),
-                     "integer" = vclFillVCLMatrix(x@address, value, 4L, x@.context_index - 1),
-                     "float" = vclFillVCLMatrix(x@address, value, 6L, x@.context_index - 1),
-                     "double" = vclFillVCLMatrix(x@address, value, 8L, x@.context_index - 1),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "missing", value = "vclVector"),
-          function(x, i, j, value) {
-              
-              switch(typeof(x),
-                     "integer" = assignVectorToMat(x@address, value@address, 4L),
-                     "float" = assignVectorToMat(x@address, value@address, 6L),
-                     "double" = assignVectorToMat(x@address, value@address, 8L),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "vclMatrix", i = "missing", j = "numeric", value = "vclVector"),
-          function(x, i, j, value) {
-              
-              switch(typeof(x),
-                     "integer" = assignVectorToCol(x@address, value@address, j-1, 4L),
-                     "float" = assignVectorToCol(x@address, value@address, j-1, 6L),
-                     "double" = assignVectorToCol(x@address, value@address, j-1, 8L),
-                     stop("unsupported matrix type")
-              )
-              
-              return(x)
-          })
-
 #' @rdname grapes-times-grapes-methods
 #' @export
 setMethod("%*%", signature(x="vclMatrix", y = "vclMatrix"),
@@ -507,11 +69,11 @@ setMethod("Arith", c(e1="vclMatrix", e2="vclMatrix"),
               op = .Generic[[1]]
               
               switch(op,
-                     `+` = vclMat_axpy(1, e1, e2),
-                     `-` = vclMat_axpy(-1, e2, e1),
-                     `*` = vclMatElemMult(e1, e2),
-                     `/` = vclMatElemDiv(e1,e2),
-                     `^` = vclMatElemPow(e1, e2),
+                     `+` = gpu_Mat_axpy(1, e1, e2),
+                     `-` = gpu_Mat_axpy(-1, e2, e1),
+                     `*` = gpuMatElemMult(e1, e2),
+                     `/` = gpuMatElemDiv(e1,e2),
+                     `^` = gpuMatElemPow(e1, e2),
                      stop("undefined operation")
               )
           },
@@ -529,11 +91,11 @@ setMethod("Arith", c(e1="vclMatrix", e2="matrix"),
               op = .Generic[[1]]
               
               switch(op,
-                     `+` = vclMat_axpy(1, e1, e2),
-                     `-` = vclMat_axpy(-1, e2, e1),
-                     `*` = vclMatElemMult(e1, e2),
-                     `/` = vclMatElemDiv(e1,e2),
-                     `^` = vclMatElemPow(e1, e2),
+                     `+` = gpu_Mat_axpy(1, e1, e2),
+                     `-` = gpu_Mat_axpy(-1, e2, e1),
+                     `*` = gpuMatElemMult(e1, e2),
+                     `/` = gpuMatElemDiv(e1,e2),
+                     `^` = gpuMatElemPow(e1, e2),
                      stop("undefined operation")
               )
           },
@@ -550,11 +112,11 @@ setMethod("Arith", c(e1="matrix", e2="vclMatrix"),
               op = .Generic[[1]]
               
               switch(op,
-                     `+` = vclMat_axpy(1, e1, e2),
-                     `-` = vclMat_axpy(-1, e2, e1),
-                     `*` = vclMatElemMult(e1, e2),
-                     `/` = vclMatElemDiv(e1,e2),
-                     `^` = vclMatElemPow(e1, e2),
+                     `+` = gpu_Mat_axpy(1, e1, e2),
+                     `-` = gpu_Mat_axpy(-1, e2, e1),
+                     `*` = gpuMatElemMult(e1, e2),
+                     `/` = gpuMatElemDiv(e1,e2),
+                     `^` = gpuMatElemPow(e1, e2),
                      stop("undefined operation")
               )
           },
@@ -572,15 +134,15 @@ setMethod("Arith", c(e1="vclMatrix", e2="numeric"),
               switch(op,
                      `+` = {
                          e2 <- vclMatrix(e2, ncol=ncol(e1), nrow=nrow(e1), type=typeof(e1), ctx_id=e1@.context_index)
-                         vclMat_axpy(1, e1, e2)
+                         gpu_Mat_axpy(1, e1, e2)
                      },
                      `-` = {
                          e2 <- vclMatrix(e2, ncol=ncol(e1), nrow=nrow(e1), type=typeof(e1), ctx_id=e1@.context_index)
-                         vclMat_axpy(-1, e2, e1)
+                         gpu_Mat_axpy(-1, e2, e1)
                      },
-                     `*` = vclMatScalarMult(e1, e2),
-                     `/` = vclMatScalarDiv(e1, e2),
-                     `^` = vclMatScalarPow(e1, e2),
+                     `*` = gpuMatScalarMult(e1, e2),
+                     `/` = gpuMatScalarDiv(e1, e2),
+                     `^` = gpuMatScalarPow(e1, e2),
                      stop("undefined operation")
               )
 
@@ -599,21 +161,21 @@ setMethod("Arith", c(e1="numeric", e2="vclMatrix"),
               switch(op,
                      `+` = {
                          # e1 = vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2), ctx_id = e2@.context_index)
-                         vclMat_axpy(1, e1, e2, AisScalar = TRUE)
+                         gpu_Mat_axpy(1, e1, e2, AisScalar = TRUE)
                      },
                      `-` = {
                          # e1 = vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2), ctx_id = e2@.context_index)
                          # vclMat_axpy(-1, e2, e1)
-                         vclMat_axpy(-1, e1, e2, AisScalar = TRUE)
+                         gpu_Mat_axpy(-1, e1, e2, AisScalar = TRUE)
                      },
-                     `*` = vclMatScalarMult(e2, e1),
+                     `*` = gpuMatScalarMult(e2, e1),
                      `/` = {
                          # e1 = vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2), ctx_id = e2@.context_index)
-                         vclMatScalarDiv(e1, e2, AisScalar = TRUE)
+                         gpuMatScalarDiv(e1, e2, AisScalar = TRUE)
                      },
                      `^` = {
                          e1 <- vclMatrix(e1, ncol=ncol(e2), nrow=nrow(e2), type=typeof(e2), ctx_id = e2@.context_index)
-                         vclMatElemPow(e1, e2)
+                         gpuMatElemPow(e1, e2)
                      },
                      stop("undefined operation")
               )
@@ -628,7 +190,7 @@ setMethod("Arith", c(e1="vclMatrix", e2="missing"),
           {
               op = .Generic[[1]]
               switch(op,
-                     `-` = vclMatrix_unary_axpy(e1),
+                     `-` = gpuMatrix_unary_axpy(e1),
                      stop("undefined operation")
               )
           },
@@ -643,8 +205,8 @@ setMethod("Arith", c(e1="vclMatrix", e2="vclVector"),
               op = .Generic[[1]]
               
               switch(op,
-                     `+` = vclMatVec_axpy(1, e1, e2),
-                     `-` = vclMatVec_axpy(-1, e2, e1),
+                     `+` = gpuMatVec_axpy(1, e1, e2),
+                     `-` = gpuMatVec_axpy(-1, e2, e1),
                      stop("undefined operation")
               )
           },
@@ -659,19 +221,19 @@ setMethod("Math", c(x="vclMatrix"),
           {
               op = .Generic[[1]]
               switch(op,
-                     `sin` = vclMatElemSin(x),
-                     `asin` = vclMatElemArcSin(x),
-                     `sinh` = vclMatElemHypSin(x),
-                     `cos` = vclMatElemCos(x),
-                     `acos` = vclMatElemArcCos(x),
-                     `cosh` = vclMatElemHypCos(x),
-                     `tan` = vclMatElemTan(x),
-                     `atan` = vclMatElemArcTan(x),
-                     `tanh` = vclMatElemHypTan(x),
-                     `log10` = vclMatElemLog10(x),
-                     `exp` = vclMatElemExp(x),
-                     `abs` = vclMatElemAbs(x),
-                     `sqrt` = vclMatSqrt(x),
+                     `sin` = gpuMatElemSin(x),
+                     `asin` = gpuMatElemArcSin(x),
+                     `sinh` = gpuMatElemHypSin(x),
+                     `cos` = gpuMatElemCos(x),
+                     `acos` = gpuMatElemArcCos(x),
+                     `cosh` = gpuMatElemHypCos(x),
+                     `tan` = gpuMatElemTan(x),
+                     `atan` = gpuMatElemArcTan(x),
+                     `tanh` = gpuMatElemHypTan(x),
+                     `log10` = gpuMatElemLog10(x),
+                     `exp` = gpuMatElemExp(x),
+                     `abs` = gpuMatElemAbs(x),
+                     `sqrt` = gpuMatSqrt(x),
                      `sign` = gpuMatSign(x),
                      stop("undefined operation")
               )
@@ -685,10 +247,10 @@ setMethod("log", c(x="vclMatrix"),
           function(x, base=NULL)
           {
               if(is.null(base)){
-                  vclMatElemLog(x) 
+                  gpuMatElemLog(x) 
               }else{
                   assert_is_numeric(base)
-                  vclMatElemLogBase(x, base)
+                  gpuMatElemLogBase(x, base)
               }
               
           },
@@ -916,8 +478,6 @@ setMethod("cov",
 #' @title Row and Column Sums and Means of vclMatrix
 #' @description Row and column sums and of vclMatrix objects
 #' @param x A vclMatrix object
-#' @param na.rm Not currently used
-#' @param dims Not currently used
 #' @return A gpuVector object
 #' @author Charles Determan Jr.
 #' @docType methods
@@ -926,8 +486,8 @@ setMethod("cov",
 #' @aliases rowSums,vclMatrix
 #' @export
 setMethod("colSums",
-          signature(x = "vclMatrix", na.rm = "missing", dims = "missing"),
-          function(x, na.rm, dims){
+          signature(x = "vclMatrix"),
+          function(x){
               vclMatrix_colSums(x)
           })
 
@@ -935,8 +495,8 @@ setMethod("colSums",
 #' @rdname vclMatrix.colSums
 #' @export
 setMethod("rowSums",
-          signature(x = "vclMatrix", na.rm = "missing", dims = "missing"),
-          function(x, na.rm, dims){
+          signature(x = "vclMatrix"),
+          function(x){
               vclMatrix_rowSums(x)
           })
 
@@ -945,8 +505,8 @@ setMethod("rowSums",
 #' @rdname vclMatrix.colSums
 #' @export
 setMethod("colMeans",
-          signature(x = "vclMatrix", na.rm = "missing", dims = "missing"),
-          function(x, na.rm, dims){
+          signature(x = "vclMatrix"),
+          function(x){
               vclMatrix_colMeans(x)
           })
 
@@ -954,8 +514,8 @@ setMethod("colMeans",
 #' @rdname vclMatrix.colSums
 #' @export
 setMethod("rowMeans",
-          signature(x = "vclMatrix", na.rm = "missing", dims = "missing"),
-          function(x, na.rm, dims){
+          signature(x = "vclMatrix"),
+          function(x){
               vclMatrix_rowMeans(x)
           })
 

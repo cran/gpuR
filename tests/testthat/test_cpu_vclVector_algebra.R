@@ -70,7 +70,7 @@ test_that("CPU vclVector Single Precision Vector Subtraction ", {
                  info="float vcl vector elements not equivalent")  
 })
 
-test_that("gpuVector Single Precision Scalar Matrix Subtraction", {
+test_that("CPU vclVector Single Precision Scalar Matrix Subtraction", {
     
     has_cpu_skip()
     
@@ -255,6 +255,27 @@ test_that("CPU vclVector Single Precision Outer Product ", {
                  info="float vcl vector elements not equivalent")  
     expect_equal(fvclC2[,], C2, tolerance=1e-07,
                  info="float vcl vector elements not equivalent")
+})
+
+test_that("CPU vclVector Single precision tcrossprod", {
+    
+    has_cpu_skip()
+    
+    C <- tcrossprod(A,B)
+    C2 <- tcrossprod(A)
+    
+    gpuA <- vclVector(A, type="float")
+    gpuB <- vclVector(B, type="float")
+    
+    gpuC <- tcrossprod(gpuA, gpuB)
+    gpuC2 <- tcrossprod(gpuA)
+    
+    expect_is(gpuC, "fvclMatrix")
+    expect_is(gpuC2, "fvclMatrix")
+    expect_equal(gpuC[], C, tolerance=1e-06, 
+                 info="float vector outer product elements not equivalent")
+    expect_equal(gpuC2[,], C2, tolerance=1e-06,
+                 info="float vector outer product elements not equivalent")
 })
 
 # Double Precision Tests
@@ -496,6 +517,27 @@ test_that("CPU vclVector Double Precision Outer Product ", {
                  info="double vcl vector elements not equivalent")  
     expect_equal(dvclC2[,], C2, tolerance=.Machine$double.eps^0.5,
                  info="double vcl vector elements not equivalent")
+})
+
+test_that("CPU gpuVector Double precision tcrossprod", {
+    
+    has_cpu_skip()
+    
+    C <- tcrossprod(A,B)
+    C2 <- tcrossprod(A)
+    
+    gpuA <- vclVector(A, type="double")
+    gpuB <- vclVector(B, type="double")
+    
+    gpuC <- tcrossprod(gpuA, gpuB)
+    gpuC2 <- tcrossprod(gpuA)
+    
+    expect_is(gpuC, "dvclMatrix")
+    expect_is(gpuC2, "dvclMatrix")
+    expect_equal(gpuC[], C, tolerance=1e-06, 
+                 info="double vector outer product elements not equivalent")
+    expect_equal(gpuC2[,], C2, tolerance=1e-06,
+                 info="double vector outer product elements not equivalent")
 })
 
 setContext(current_context)

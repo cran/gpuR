@@ -4,6 +4,7 @@
 \docType{methods}
 \name{\%*\%,gpuVector,gpuVector-method}
 \alias{\%*\%,gpuVector,gpuVector-method}
+\alias{\%*\%,gpuVector,gpuMatrix-method}
 \alias{\%*\%,vclMatrix,vclMatrix-method}
 \alias{\%*\%,vclMatrix,vclVector-method}
 \alias{\%*\%,vclMatrix,matrix-method}
@@ -11,11 +12,45 @@
 \alias{\%*\%,vclVector,vclVector-method}
 \alias{\%*\%,vclVector,vclMatrix-method}
 \alias{\%*\%,gpuMatrix,gpuMatrix-method}
+\alias{\%*\%,gpuMatrix,gpuVector-method}
 \alias{\%*\%,gpuMatrix,matrix-method}
 \alias{\%*\%,matrix,gpuMatrix-method}
-\title{Matrix Multiplication}
+\title{#' @rdname as.vclVector-methods
+#' @param shared Logical indicating if memory should be shared with \code{x}
+#' @aliases as.gpuVector,matrix
+#' @export
+as.vclVector.vclMatrix <- function(data, shared = FALSE, ...){
+    
+    ctx_id <- data@.context_index - 1
+    
+    switch(typeof(data),
+           "integer" = return(new("ivclVector", 
+                                  address=vclMatTovclVec(data@address, shared, ctx_id, 4L),
+                                  .context_index = data@.context_index,
+                                  .platform_index = data@.platform_index,
+                                  .platform = data@.platform,
+                                  .device_index = data@.device_index,
+                                  .device = data@.device)),
+           "float" = return(new("fvclVector", 
+                                address=vclMatTovclVec(data@address, shared, ctx_id, 6L),
+                                .context_index = data@.context_index,
+                                .platform_index = data@.platform_index,
+                                .platform = data@.platform,
+                                .device_index = data@.device_index,
+                                .device = data@.device)),
+           "double" = return(new("dvclVector", 
+                                 address=vclMatTovclVec(data@address, shared, ctx_id, 8L),
+                                 .context_index = data@.context_index,
+                                 .platform_index = data@.platform_index,
+                                 .platform = data@.platform,
+                                 .device_index = data@.device_index,
+                                 .device = data@.device))
+    )
+}}
 \usage{
 \S4method{\%*\%}{gpuVector,gpuVector}(x, y)
+
+\S4method{\%*\%}{gpuVector,gpuMatrix}(x, y)
 
 \S4method{\%*\%}{vclMatrix,vclMatrix}(x, y)
 
@@ -30,6 +65,8 @@
 \S4method{\%*\%}{vclVector,vclMatrix}(x, y)
 
 \S4method{\%*\%}{gpuMatrix,gpuMatrix}(x, y)
+
+\S4method{\%*\%}{gpuMatrix,gpuVector}(x, y)
 
 \S4method{\%*\%}{gpuMatrix,matrix}(x, y)
 

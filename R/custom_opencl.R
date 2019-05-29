@@ -8,7 +8,8 @@ splitAt <- function(x, pos) unname(split(x, cumsum(seq_along(x) %in% pos)))
 #' @param objects character vector of gpuR objects to be passed
 #' @param intents character vector specifying 'intent' of gpuR objects.
 #' options include \code{"IN"},\code{"OUT"},\code{"INOUT"}
-#' @param queues list of equal length to \code{"objects"} where each element
+#' @param queues list of character vectors reflecting equal length to \code{"objects"} 
+#' where each element reflects a kernel function defined in an OpenCL kernel file.
 #' @param kernel_maps The corresponding arguments names in the provided OpenCL kernel
 #' corresponds to the gpuR objects passed and contains a character vector of
 #' which kernels the object will be enqueued.
@@ -104,13 +105,26 @@ custom_opencl <- function(kernel, cl_args, type){
         }
 
     })
-
+    
     # list of input objects for later use
     input_objs <- sapply(input_args, function(x){
         # y <- unlist(strsplit(input_args[3], " "))
-        unlist(lapply(strsplit(x, " "), function(y) substr(y[[length(y)]], 0, nchar(y[[length(y)]])-1)))
+        unlist(lapply(strsplit(x, " "), function(y) {
+            # print(y)
+            if(any(grepl(",", y) & !grepl("ptr", y))){
+                end <- nchar(y[[length(y)]])-2
+            }else{
+                end <- nchar(y[[length(y)]])-1
+            }
+            substr(y[[length(y)]], 0, end)
+        }
+        ))
     }, USE.NAMES = FALSE)
-
+    
+    # print(input_args)
+    # print(input_objs)
+    # stop("stopping")
+    
     # context index
     # grab first cl argument
     cl_arg <- cl_args[cl_args$object %in% c("gpuMatrix", "gpuVector", "vclMatrix", "vclVector"),]
@@ -284,15 +298,44 @@ custom_opencl <- function(kernel, cl_args, type){
 
     # remove blank lines
     src <- src[sapply(src, function(x) length(grep("^\\s*$", x)) == 0)]
+    
+    # remove non-kernel functions
+    # create environment for scoping flag
+    e <- new.env()
+    e$flag <- FALSE
+    src<- src[sapply(src, function(x){
+        if(grepl("__kernel", x)){
+            e$flag <- TRUE
+            return(TRUE)
+        }else{
+            if(e$flag){
+                return(e$flag)
+            }else{
+                e$flag <- FALSE
+                return(e$flag)
+            }
+        }
+    })]
+    
+    # cleanup environment
+    rm(e)
+    
+    # remove any possible pragma lines
+    src <- src[!sapply(src, function(x) grepl("#pragma", x))]
 
     # separate kernels
     kernels <- splitAt(src, which(sapply(src, function(x) grepl("\\_\\_kernel", x, perl = TRUE), USE.NAMES = FALSE)))
-
+    
     # get kernel names
     knames <- sapply(kernels, function(x) {
         gsub("\\(.*", "", unlist(strsplit(x[1], " "))[3])
     }, USE.NAMES = FALSE)
 
+    if(any(!cl_args[,"queues"] %in% knames)){
+        mismatches <- unique(cl_args[!cl_args[,"queues"] %in% knames,"queues"])
+        stop(paste0(paste0("queues: ", paste(mismatches, collapse=", ")), " defined in 'setup_opencl' not found in kernel file: ", kernel))
+    }
+    
     knames_line <- paste0('Rcpp::StringVector kernel_name("',paste(knames, collapse = '","'), '");')
 
     kernel_args <- sapply(kernels, function(x){
@@ -511,7 +554,7 @@ custom_opencl <- function(kernel, cl_args, type){
            "Windows" = {
                arch <- if(R.Version()[["arch"]] == "x86_64") "x64" else "i386"
                LIBS <- "-LPATH/loader/ARCH -lOpenCL -Wl,-rpath,PATH/loader/ARCH"
-               LIBS <- gsub("PATH", pkg_inc, LIBS)
+               LIBS <- gsub("PATH", paste('"', pkg_inc, '"', sep = ""), LIBS)
                LIBS <- gsub("ARCH", arch, LIBS)
                Sys.setenv(PKG_LIBS=LIBS)
            },

@@ -30,6 +30,21 @@ setMethod("%*%", c(x="gpuVector", y="gpuVector"),
               gpuVecInnerProd(x,y)
           })
 
+#' @rdname grapes-times-grapes-methods
+#' @export
+setMethod("%*%", signature(x="gpuVector", y = "gpuMatrix"),
+          function(x,y)
+          {
+              # print(length(x))
+              # print(nrow(y))
+              if(length(x) != nrow(y)){
+                  stop("Non-conformable arguments")
+              }
+              return(vclGEMV(x, y))
+          },
+          valueClass = "gpuVector"
+)
+
 #' @title Outer Product
 #' @description The outer product of two gpuR vector objects
 #' @param X A gpuR object
@@ -42,6 +57,24 @@ setMethod("%o%", c(X="gpuVector", Y="gpuVector"),
           function(X, Y){
               gpuVecOuterProd(X,Y)
           })
+
+#' @rdname vclMatrix-crossprod
+#' @export
+setMethod("tcrossprod",
+          signature(x = "gpuVector", y = "gpuVector"),
+          function(x, y){
+              return(gpuVecOuterProd(x, y))
+          },
+          valueClass = "gpuMatrix")
+
+#' @rdname vclMatrix-crossprod
+#' @export
+setMethod("tcrossprod",
+          signature(x = "gpuVector", y = "missing"),
+          function(x, y){
+              return(gpuVecOuterProd(x, x))
+          },
+          valueClass = "gpuMatrix")
 
 #' @rdname Arith-methods
 #' @aliases Arith-gpuVector-gpuVector-method
@@ -268,64 +301,6 @@ setMethod('length', signature(x = "gpuVector"),
           }
 )
 
-
-#' @rdname extract-methods
-#' @export
-setMethod("[",
-          signature(x = "gpuVector", i = "missing", j = "missing", drop = "missing"),
-          function(x, i, j, drop) {
-              switch(typeof(x),
-                     "integer" = return(getEigenMatrix(x@address, 4L)),
-                     "float" = return(getEigenMatrix(x@address, 6L)),
-                     "double" = return(getEigenMatrix(x@address, 8L))
-              )
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[",
-          signature(x = "gpuVector", i = "numeric", j = "missing", drop = "missing"),
-          function(x, i, j, drop) {
-              
-              assert_all_are_in_closed_range(i, lower = 1, upper = length(x))
-              
-              switch(typeof(x),
-                     "integer" = return(GetVecElement(x@address, i, 4L)),
-                     "float" = return(GetVecElement(x@address, i, 6L)),
-                     "double" = return(GetVecElement(x@address, i, 8L))
-              )
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "gpuVector", i = "numeric", j = "missing", value = "numeric"),
-          function(x, i, j, value) {
-              
-              assert_all_are_in_closed_range(i, lower = 1, upper = length(x))
-              
-              switch(typeof(x),
-                     "float" = SetVecElement(x@address, i, value, 6L),
-                     "double" = SetVecElement(x@address, i, value, 8L),
-                     stop("type not recongized")
-              )
-              return(x)
-          })
-
-#' @rdname extract-methods
-#' @export
-setMethod("[<-",
-          signature(x = "gpuVector", i = "numeric", j = "missing", value = "integer"),
-          function(x, i, j, value) {
-              
-              assert_all_are_in_closed_range(i, lower = 1, upper = length(x))
-              
-              switch(typeof(x),
-                     "integer" = SetVecElement(x@address, i, value, 4L),
-                     stop("type not recongized")
-              )
-              return(x)
-          })
 
 #' @rdname gpuR-slice
 setMethod("slice",

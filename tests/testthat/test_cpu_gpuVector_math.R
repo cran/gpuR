@@ -130,7 +130,7 @@ test_that("CPU gpuVector Single Precision Element-Wise Logs", {
                  info="log float matrix elements not equivalent")  
     expect_equal(fgpu_log10[,], R_log10, tolerance=1e-07, 
                  info="log10 float matrix elements not equivalent")  
-    expect_equal(fgpu_log2[,], R_log2, tolerance=1e-0, 
+    expect_equal(fgpu_log2[,], R_log2, tolerance=1e-06, 
                  info="base log float matrix elements not equivalent") 
 })
 
@@ -352,6 +352,23 @@ test_that("CPU gpuVector Double Precision sqrt", {
     expect_equal(fgpu_sqrt[,], R_sqrt, tolerance=.Machine$double.eps^0.5, 
                  info="sqrt double vector elements not equivalent")  
 })
+
+# test_that("CPU gpuVector Integer Precision Matrix sign", {
+#     has_cpu_skip()
+#     
+#     Ai <- seq.int(16) * sample(c(-1, 1), 16, replace = TRUE)
+#     
+#     R_sign <- sign(Ai)
+#     
+#     fgpuA <- gpuVector(Ai, type="integer")
+#     
+#     fgpu_sign <- sign(fgpuA)
+#     
+#     expect_is(fgpu_sign, "igpuVector")
+#     expect_equal(fgpu_sign[,], R_sign, 
+#                  info="sign integer matrix elements not equivalent",
+#                  check.attributes=FALSE)  
+# })
 
 test_that("CPU gpuVector Single Precision Matrix sign", {
     has_cpu_skip()

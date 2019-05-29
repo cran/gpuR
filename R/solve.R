@@ -147,7 +147,8 @@ setMethod("solve",
                                              FALSE,
                                              FALSE,
                                              6L, 
-                                             in_mat@.context_index - 1)
+                                             in_mat@.context_index - 1,
+                                             FALSE)
                      },
                      double = {
                          cpp_gpuMatrix_solve(in_mat@address, 
@@ -155,7 +156,8 @@ setMethod("solve",
                                              FALSE,
                                              FALSE,
                                              8L, 
-                                             in_mat@.context_index - 1)
+                                             in_mat@.context_index - 1,
+                                             FALSE)
                      },
                      stop("type not recognized")
               )
@@ -182,7 +184,8 @@ setMethod("solve",
               in_mat <- deepcopy(a)
               
               # don't want to overwrite b when passed in
-              out_mat <- identity_matrix(nrow(in_mat), type = type)
+              # out_mat <- identity_matrix(nrow(in_mat), type = type)
+              out_mat <- gpuMatrix(ncol = nrow(in_mat), nrow = nrow(in_mat), type = type)
               
               switch(type,
                      integer = {
@@ -192,7 +195,7 @@ setMethod("solve",
                          cpp_gpuMatrix_solve(in_mat@address, 
                                              out_mat@address, 
                                              FALSE,
-                                             TRUE,
+                                             FALSE,
                                              6L, 
                                              in_mat@.context_index - 1)
                      },
@@ -200,7 +203,7 @@ setMethod("solve",
                          cpp_gpuMatrix_solve(in_mat@address, 
                                              out_mat@address, 
                                              FALSE,
-                                             TRUE,
+                                             FALSE,
                                              8L, 
                                              in_mat@.context_index - 1)
                      },
@@ -209,6 +212,6 @@ setMethod("solve",
               
               return(out_mat)
           },
-          valueClass = "vclMatrix"
+          valueClass = "gpuMatrix"
 )
 
