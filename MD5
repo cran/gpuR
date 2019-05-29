@@ -1,6 +1,6 @@
-f695bcb70beca50e17efa430316b63fd *DESCRIPTION
+8f0d12bccc1cbb280cb48ca530d247cc *DESCRIPTION
 c0c47ccc8c7945c85e024b0c5bde87b9 *INSTALL
-ba6b6b599e3634d9d3042f49dedcac37 *NAMESPACE
+caf60d67c166794ed163590b0d9a4e7b *NAMESPACE
 b05747378762acbe40a30f357dbd2a3d *R/RcppExports.R
 dc5b3f65e9f79cd25d510677427a7c31 *R/asserts.R
 850cdcbce7e3403c706bad034e9e6fad *R/chol.R
@@ -84,10 +84,10 @@ d1874f1b2a2d20976e6052e155c9e390 *inst/CL/iVec_pmin.cl
 1897ecab236b0862281c9becc388194b *inst/NEWS.Rd
 9b6dc00d7afef65f95788751e4f80efd *inst/doc/custom_ocl_gpuR.R
 aab32f72ad35d58b18de31ee0e91fddf *inst/doc/custom_ocl_gpuR.Rnw
-263a61c40ea21ec05531e3022bb2e38e *inst/doc/custom_ocl_gpuR.pdf
+c3ee351221169d0d12c744c8ea9fe52f *inst/doc/custom_ocl_gpuR.pdf
 a9daacc72310d682a5cfee854633eea3 *inst/doc/gpuR.R
 4ea377a12f89801a4ddeda05e9c713de *inst/doc/gpuR.Rnw
-63d8c58035a369ca5eb4cdd10a4499d5 *inst/doc/gpuR.pdf
+f73fc55565b40f3391b6d09027384b69 *inst/doc/gpuR.pdf
 557e4785d3cf96b42de7ac40058d70d4 *inst/include/CL/cl.h
 f2c8bee05e5a84ea8282b7b95646c515 *inst/include/CL/cl.hpp
 64634186074ea8570ea24ce50b328968 *inst/include/CL/cl_d3d10.h
@@ -260,7 +260,7 @@ d86ed5069370d518675a35ef7798712e *man/vclMatrix-methods.Rd
 1069ca842a668797c870d22406663f25 *man/vclVector-methods.Rd
 bcf45746665e48226cf03f7e71f354bc *man/zgpuMatrix-class.Rd
 ac92983348eb447209a80059f2c69ec4 *man/zvclMatrix-class.Rd
-b7532b498a5019b1982e17042ee5e341 *src/Makevars.win
+73d581705c0a66a1ba33b567915c9c51 *src/Makevars.win
 800f5e06cce975235d04cb93cb726bfc *src/RcppExports.cpp
 991675aeccfb331769b6e50738cd9d79 *src/chol.cpp
 4e622fc455545539d2897834bd52fff2 *src/context.cpp
