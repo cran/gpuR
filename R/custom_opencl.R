@@ -13,24 +13,33 @@ splitAt <- function(x, pos) unname(split(x, cumsum(seq_along(x) %in% pos)))
 #' @param kernel_maps The corresponding arguments names in the provided OpenCL kernel
 #' corresponds to the gpuR objects passed and contains a character vector of
 #' which kernels the object will be enqueued.
-#' @importFrom assertive assert_is_character assert_all_are_same_length assert_is_list
+#' @return A \code{data.frame} with columns:
+#' \describe{
+#'  \item{\code{object}:}{The name of the gpuR object.}
+#'  \item{\code{intents}:}{The intent of the object, specified as 'IN', 'OUT', or 'INOUT'.}
+#'  \item{\code{queues}:}{A character vector reflecting equal length to \code{objects}, 
+#'  where each element reflects a kernel function defined in an OpenCL kernel file.}
+#'  \item{\code{map}:}{The corresponding arguments names in the provided OpenCL kernel 
+#'  corresponding to the gpuR objects passed.}
+#' }
+#' @import BH RViennaCL RcppEigen
 #' @export
 setup_opencl <- function(objects, intents, queues, kernel_maps = NULL){
 
     # make sure character vectors
-    assert_is_character(objects)
-    assert_is_character(intents)
+#    assert_is_character(objects)
+#    assert_is_character(intents)
 
     # make sure queues is a list
-    assert_is_list(queues)
+  #  assert_is_list(queues)
 
     # must define all object intents
-    assert_are_same_length(objects, intents)
-    assert_are_same_length(objects, queues)
+#    assert_are_same_length(objects, intents)
+#    assert_are_same_length(objects, queues)
 
     # make sure defining possible objects
     assert_all_are_true(objects %in% c('gpuVector', 'vclVector', 'gpuMatrix', 'vclMatrix', 'scalar'))
-    assert_all_are_true(intents %in% c("IN", "OUT", "INOUT"))
+     assert_all_are_true(intents %in% c("IN", "OUT", "INOUT"))
 
     if(is.null(kernel_maps) & is.null(names(objects))){
         stop("Either 'objects' must have names corresponding to kernel arguments
@@ -59,14 +68,15 @@ setup_opencl <- function(objects, intents, queues, kernel_maps = NULL){
 #' Provided by \code{\link{setup_opencl}}
 #' @param type The precision on which the kernel is compiled.  Options include
 #' \code{"int"}, \code{"float"}, and \code{"double"}
-#' @importFrom assertive assert_is_character
+#' @return This function does not return a value directly, but it compiles 
+#' the provided OpenCL \code{kernel} and performs necessary operations for using it.
 #' @importFrom tools file_path_sans_ext
 #' @importFrom Rcpp sourceCpp
 #' @export
 custom_opencl <- function(kernel, cl_args, type){
 
     # make sure character vectors
-    assert_is_character(type)
+   #assertive.types::assert_is_character(type)
     
     if(!type %in% c("integer", "float", "double")){
         stop("type not recognized")

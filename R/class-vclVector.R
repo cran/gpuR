@@ -19,6 +19,7 @@
 #'      \item{\code{.device_index}:}{Integer index of active device}
 #'      \item{\code{.device}:}{Name of active device}
 #'  }
+#' @return An object of class 'vclVector' with the specified slots.
 #' @name vclVector-class
 #' @rdname vclVector-class
 #' @author Charles Determan Jr.
@@ -56,6 +57,7 @@ setClass("vclVectorSlice",
 #' @name ivclVector-class
 #' @rdname ivclVector-class
 #' @author Charles Determan Jr.
+#' @return If the vclVector object is of type 'integer', returns TRUE, if not, returns an error message. 
 #' @seealso \code{\link{vclVector-class}}
 #' @export
 setClass("ivclVector",
@@ -88,6 +90,7 @@ setClass("ivclVector",
 #' @name fvclVector-class
 #' @rdname fvclVector-class
 #' @author Charles Determan Jr.
+#' @return If the vclVector object is of type 'float', returns TRUE, if not, returns an error message. 
 #' @seealso \code{\link{vclVector-class}}
 #' @export
 setClass("fvclVector",
@@ -110,6 +113,7 @@ setClass("fvclVector",
 #' @name dvclVector-class
 #' @rdname dvclVector-class
 #' @author Charles Determan Jr.
+#' @return If the vclVector object is of type 'double', returns TRUE, if not, returns an error message. 
 #' @seealso \code{\link{vclVector-class}}
 #' @export
 setClass("dvclVector",

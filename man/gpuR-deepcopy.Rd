@@ -30,6 +30,14 @@ relevant for 'block' and 'slice' objects).}
 }
 \value{
 A gpuR object
+
+A deep copy of the input \code{gpuVector} object.
+
+A deep copy of the input \code{vclMatrix} object.
+
+A deep copy of the input \code{vclVector} object.
+
+A deep copy of the input \code{gpuMatrix} object.
 }
 \description{
 This is needed to make a duplicate of a gpuR object

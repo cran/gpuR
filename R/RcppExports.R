@@ -6,7 +6,7 @@ cpp_vclMatrix_custom_chol <- function(ptrB, BisVCL, upper, sourceCode, max_local
 }
 
 initContexts <- function() {
-    invisible(.Call(`_gpuR_initContexts`))
+    .Call(`_gpuR_initContexts`)
 }
 
 #' @title Available OpenCL Contexts
@@ -258,8 +258,8 @@ cpp_gpuMatrix_solve <- function(ptrA, ptrB, AisVCL, BisVCL, type_flag, ctx_id, B
 #' @author Charles Determan Jr.
 #' @examples \dontrun{
 #'     mat <- vclMatrix(rnorm(500^2), ncol = 500, nrow = 500)
-#'     system.time(mat %*% mat)
-#'     system.time(mat %*% mat; synchronize())
+#'     system.time({mat %*% mat})
+#'     system.time({mat %*% mat; synchronize()})
 #' }
 #' @export
 synchronize <- function() {

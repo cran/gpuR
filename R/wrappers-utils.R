@@ -1,4 +1,4 @@
-#' @import assertive
+# @import assertive
 
 
 #' @title Check device type
@@ -10,14 +10,17 @@
 deviceType <- function(device_idx = NULL,
                        context_idx = currentContext())
 {
-    assert_is_integer(context_idx)
+#    assertive.types::assert_is_integer(context_idx)
     
     if(!is.null(device_idx)){
-        assert_is_integer(device_idx)
+ #       assertive.types::assert_is_integer(device_idx)
         assert_all_are_positive(device_idx)
+    } 
+
+    out <- try(cpp_deviceType(device_idx, context_idx - 1L), silent=TRUE)
+    if(identical(class(out), 'try-error')) {
+      out = 'other'
     }
-    
-    out <- cpp_deviceType(device_idx, context_idx - 1L)
     
     return(out)
 }
@@ -59,8 +62,9 @@ detectCPUs <- function(platform_idx=NULL){
         return(total_cpus)
         
     }else{
-        assert_is_integer(platform_idx)
+ #       assertive.types::assert_is_integer(platform_idx)
         assert_all_are_positive(platform_idx)
+
         numPlats <- detectPlatforms()
         
         if(platform_idx > numPlats){
@@ -106,8 +110,9 @@ detectGPUs <- function(platform_idx=NULL){
         return(total_gpus)
         
     }else{
-        assert_is_integer(platform_idx)
-        assert_all_are_positive(platform_idx)
+#        assertive.types::assert_is_integer(platform_idx)
+        platform_idx = as.integer(platform_idx) 
+          assert_all_are_positive(platform_idx)
         
         numPlats <- detectPlatforms()
         
@@ -165,8 +170,8 @@ gpuInfo <- function(device_idx=NULL,
     }
     
     if(!is.null(device_idx)){
-        assert_is_integer(device_idx)
-        assert_all_are_positive(device_idx)
+#        assertive.types::assert_is_integer(device_idx)
+      assert_all_are_positive(device_idx)
         
         if(device_idx > 1L){
             stop("multiple devices on contexts not currently supported")
@@ -197,8 +202,8 @@ cpuInfo <- function(device_idx=NULL,
     }
     
     if(!is.null(device_idx)){
-        assert_is_integer(device_idx)
-        assert_all_are_positive(device_idx)
+#        assertive.types::assert_is_integer(device_idx)
+      assert_all_are_positive(device_idx)
         
         if(device_idx > 1L){
             stop("multiple devices on contexts not currently supported")
@@ -235,8 +240,9 @@ cpuInfo <- function(device_idx=NULL,
 #' @return \item{platformExtensions}{Available platform extensions}
 #' @export
 platformInfo <- function(platform_idx=1L){
-    assert_is_integer(platform_idx)
-    assert_all_are_positive(platform_idx)
+#    assertive.types::assert_is_integer(platform_idx)
+   assert_all_are_positive(platform_idx)
+
     
     out <- cpp_platformInfo(platform_idx)
     return(out)
@@ -252,16 +258,18 @@ platformInfo <- function(platform_idx=1L){
 #' @export
 deviceHasDouble <- function(gpu_idx=currentDevice()$device_index,
                             context_idx = currentContext()){
-    assert_is_integer(gpu_idx)
-    assert_all_are_positive(gpu_idx)
-    
+#    assertive.types::assert_is_integer(gpu_idx)
+   assert_all_are_positive(gpu_idx)
+
     device_type <- deviceType(gpu_idx, context_idx)
-    
+
     out <- switch(device_type,
-                  "gpu" = gpuInfo(device_idx = as.integer(gpu_idx),
-                                  context_idx = context_idx)$double_support,
-                  "cpu" = cpuInfo(device_idx = as.integer(gpu_idx),
-                                  context_idx = context_idx)$double_support,
+                  "gpu" = gpuInfo(
+                    device_idx = as.integer(gpu_idx),
+                    context_idx = context_idx)$double_support,
+                  "cpu" = cpuInfo(
+                    device_idx = as.integer(gpu_idx),
+                    context_idx = context_idx)$double_support,
                   stop("Unrecognized device type")
     )
     
@@ -272,6 +280,8 @@ deviceHasDouble <- function(gpu_idx=currentDevice()$device_index,
 #' @title Set Context
 #' @description Change the current context used by default
 #' @param id Integer identifying which context to set
+#' @return It does not return anything. This function is 
+#' designed to set the current context to the specified context ID.
 #' @seealso \link{listContexts}
 #' @export
 setContext <- function(id = 1L){

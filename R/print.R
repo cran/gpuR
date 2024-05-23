@@ -4,18 +4,20 @@
 #' @param ... Additional arguments to print
 #' @param n Number of rows to display
 #' @param width Number of columns to display
+#' @return This function prints a truncated summary of a gpuMatrix object `x`
+#' to fit the screen
 #' @export
 print.gpuMatrix <- function(x, ..., n = NULL, width = NULL) {
     cat("Source: gpuR Matrix ", dim_desc(x), "\n", sep = "")
     cat("\n")
     
     if(!is.null(n)){
-        assert_is_integer(n)   
+#      assertive.types::assert_is_integerassert_is_integer(n)   
     }else{
         n <- ifelse(nrow(x) >= 5, 5L, nrow(x))
     }
     if(!is.null(width)){
-        assert_is_integer(width)    
+#      assertive.types::assert_is_integer(width)    
     }else{
         width <- ifelse(ncol(x) >= 5, 5L, ncol(x))
     }

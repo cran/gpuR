@@ -1,14 +1,14 @@
-## ----setup, include=FALSE, cache=FALSE-----------------------------------
+## ----setup, include=FALSE, cache=FALSE----------------------------------------
 library(knitr)
 opts_chunk$set(
 concordance=TRUE
 )
 
-## ----install, eval = FALSE-----------------------------------------------
+## ----install, eval = FALSE----------------------------------------------------
 #  # Stable version
 #  install.packages("gpuR")
 
-## ----installDev, eval = FALSE--------------------------------------------
+## ----installDev, eval = FALSE-------------------------------------------------
 #  # Dev version
 #  devtools::install_github("cdeterman/gpuR", ref = "develop")
 #  
@@ -16,7 +16,7 @@ concordance=TRUE
 #  # if updates have been made
 #  #devtools::install_github("cdeterman/RViennaCL")
 
-## ----matMult, eval=FALSE-------------------------------------------------
+## ----matMult, eval=FALSE------------------------------------------------------
 #  library("gpuR")
 #  
 #  # verify you have valid GPUs
@@ -27,7 +27,7 @@ concordance=TRUE
 #  gpuA <- gpuMatrix(rnorm(16), nrow=4, ncol=4)
 #  gpuB <- gpuA %*% gpuA
 
-## ----matBlock, eval=FALSE------------------------------------------------
+## ----matBlock, eval=FALSE-----------------------------------------------------
 #  
 #  # create gpuMatrix
 #  set.seed(123)

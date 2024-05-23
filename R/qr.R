@@ -105,7 +105,7 @@ qr.vclMatrix <-
 #' @description Returns the components of the QR decomposition.
 #' @param qr \code{gpuQR} object
 #' @param complete not currently used
-#' @return \code{qr.Q} returns all of \code{Q}
+#' @return \code{qr.Q} returns all of \code{Q},
 #' \code{qr.R} returns all of \code{R}
 #' @author Charles Determan Jr.
 #' @rdname qr.R-methods
@@ -169,9 +169,6 @@ setMethod("qr.Q", signature(qr = "gpuQR"),
                   Q <- gpuMatrix(nrow = nrow(qr$qr), ncol = ncol(qr$qr), type = type)
                   R <- vclMatrix(nrow = nrow(qr$qr), ncol = nrow(qr$qr), type = type)
               }
-              
-              # print(isVCL)
-              # stop("stopping")
               
               switch(type,
                      "float" = cpp_recover_qr(qr$qr@address,

@@ -9,11 +9,9 @@
 \usage{
 block(object, rowStart, rowEnd, colStart, colEnd)
 
-\S4method{block}{vclMatrix,integer,integer,integer,integer}(object,
-  rowStart, rowEnd, colStart, colEnd)
+\S4method{block}{vclMatrix,integer,integer,integer,integer}(object, rowStart, rowEnd, colStart, colEnd)
 
-\S4method{block}{gpuMatrix,integer,integer,integer,integer}(object,
-  rowStart, rowEnd, colStart, colEnd)
+\S4method{block}{gpuMatrix,integer,integer,integer,integer}(object, rowStart, rowEnd, colStart, colEnd)
 }
 \arguments{
 \item{object}{A \code{gpuMatrix} or \code{vclMatrix} object}
@@ -27,7 +25,7 @@ block(object, rowStart, rowEnd, colStart, colEnd)
 \item{colEnd}{An integer indicating the last column of block}
 }
 \value{
-A \code{gpuMatrixBlock} or \code{vclMatrixBlock} object
+A block of the input \code{gpuMatrixBlock} or \code{vclMatrixBlock} object.
 }
 \description{
 This doesn't create a copy, it provides a child class that

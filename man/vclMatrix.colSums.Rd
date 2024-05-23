@@ -4,10 +4,11 @@
 \name{colSums,vclMatrix-method}
 \alias{colSums,vclMatrix-method}
 \alias{colSums,vclMatrix}
+\alias{rowSums,vclMatrix}
 \alias{rowSums,vclMatrix-method}
 \alias{colMeans,vclMatrix-method}
 \alias{rowMeans,vclMatrix-method}
-\title{Row and Column Sums and Means of vclMatrix}
+\title{Row and Column Sums and Means of \code{vclMatrix}}
 \usage{
 \S4method{colSums}{vclMatrix}(x)
 
@@ -18,10 +19,10 @@
 \S4method{rowMeans}{vclMatrix}(x)
 }
 \arguments{
-\item{x}{A vclMatrix object}
+\item{x}{A \code{vclMatrix} object}
 }
 \value{
-A gpuVector object
+A \code{vclVector} object
 }
 \description{
 Row and column sums and of vclMatrix objects

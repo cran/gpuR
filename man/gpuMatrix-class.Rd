@@ -4,6 +4,9 @@
 \name{gpuMatrix-class}
 \alias{gpuMatrix-class}
 \title{gpuMatrix Class}
+\value{
+An object of class 'gpuMatrix' with the specified slots.
+}
 \description{
 This is the 'mother' class for all
 gpuMatrix objects.  It is essentially a wrapper for

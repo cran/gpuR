@@ -36,14 +36,15 @@ S <- sum(A)
 
 test_that("gpuMatrix Integer Precision Sum",
 {
+  
   has_gpu_skip()
   
-  fgpuX <- gpuMatrix(Ai, type="integer")
+  fgpuX <- gpuMatrix(Aint, type="integer")
   
   gpuC <- sum(fgpuX)
   
   expect_is(gpuC, "integer")
-  expect_equivalent(gpuC[], sum(Ai), 
+  expect_equivalent(gpuC[], sum(Aint), 
                     info="integer sum not equivalent")  
 })
 
@@ -63,7 +64,8 @@ test_that("gpuMatrix Single Precision Sum",
 test_that("gpuMatrix Double Precision Sum", 
 {
   has_gpu_skip()
-  
+  has_double_skip()
+
   dgpuX <- gpuMatrix(A, type="double")
   
   gpuC <-sum(dgpuX)
@@ -396,6 +398,7 @@ test_that("gpuMatrix Double Precision Block Sum",
 {
   
   has_gpu_skip()
+  has_double_skip()
   
   dgpuX <- gpuMatrix(A, type="double")
   dgpuXS <- block(dgpuX, 2L,4L,2L,4L)

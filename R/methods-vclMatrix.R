@@ -1,5 +1,5 @@
 
-
+#' @return A regular R matrix.
 #' @export
 as.matrix.vclMatrix <- function(x, ...){
     out <- x[]
@@ -20,6 +20,8 @@ setMethod("%*%", signature(x="vclMatrix", y = "vclMatrix"),
           valueClass = "vclMatrix"
 )
 
+
+#' @return The result of multiplying the \code{vclMatrix} `x` and the \code{vclVector} `y`.
 #' @rdname grapes-times-grapes-methods
 #' @export
 setMethod("%*%", signature(x="vclMatrix", y = "vclVector"),
@@ -33,6 +35,9 @@ setMethod("%*%", signature(x="vclMatrix", y = "vclVector"),
           valueClass = "vclVector"
 )
 
+
+#' @return A \code{vclMatrix} object, the result of multiplying 
+#' the \code{vclMatrix} `x` and the regular R matrix `y`.
 #' @rdname grapes-times-grapes-methods
 #' @export
 setMethod("%*%", signature(x="vclMatrix", y = "matrix"),
@@ -47,6 +52,15 @@ setMethod("%*%", signature(x="vclMatrix", y = "matrix"),
           valueClass = "vclMatrix"
 )
 
+
+
+
+
+
+
+
+#' @return A \code{vclMatrix} object, the result of multiplying the regular 
+#' R matrix x and the \code{vclMatrix} y.
 #' @rdname grapes-times-grapes-methods
 #' @export
 setMethod("%*%", signature(x="matrix", y = "vclMatrix"),
@@ -60,6 +74,8 @@ setMethod("%*%", signature(x="matrix", y = "vclMatrix"),
           },
           valueClass = "vclMatrix"
 )
+
+
 
 #' @rdname Arith-methods
 #' @export
@@ -79,6 +95,8 @@ setMethod("Arith", c(e1="vclMatrix", e2="vclMatrix"),
           },
           valueClass = "vclMatrix"
 )
+
+
 
 #' @rdname Arith-methods
 #' @export
@@ -102,6 +120,8 @@ setMethod("Arith", c(e1="vclMatrix", e2="matrix"),
           valueClass = "vclMatrix"
 )
 
+
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="matrix", e2="vclMatrix"),
@@ -123,12 +143,17 @@ setMethod("Arith", c(e1="matrix", e2="vclMatrix"),
           valueClass = "vclMatrix"
 )
 
+
+
+
+
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="vclMatrix", e2="numeric"),
           function(e1, e2)
           {
-              assert_is_of_length(e2, 1)
+#            assertive.properties::assert_is_of_length(e2, 1)
 
               op = .Generic[[1]]
               switch(op,
@@ -150,12 +175,13 @@ setMethod("Arith", c(e1="vclMatrix", e2="numeric"),
           valueClass = "vclMatrix"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="numeric", e2="vclMatrix"),
           function(e1, e2)
           {
-              assert_is_of_length(e1, 1)
+#            assertive.properties::assert_is_of_length(e1, 1)
 
               op = .Generic[[1]]
               switch(op,
@@ -183,6 +209,8 @@ setMethod("Arith", c(e1="numeric", e2="vclMatrix"),
           valueClass = "vclMatrix"
 )
 
+
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="vclMatrix", e2="missing"),
@@ -196,6 +224,8 @@ setMethod("Arith", c(e1="vclMatrix", e2="missing"),
           },
           valueClass = "vclMatrix"
 )
+
+
 
 #' @rdname Arith-methods
 #' @export
@@ -214,6 +244,8 @@ setMethod("Arith", c(e1="vclMatrix", e2="vclVector"),
 )
 
 
+
+#' @return A \code{vclMatrix} object.
 #' @rdname Math-methods
 #' @export
 setMethod("Math", c(x="vclMatrix"),
@@ -241,6 +273,8 @@ setMethod("Math", c(x="vclMatrix"),
           valueClass = "vclMatrix"
 )
 
+
+#' @return A \code{vclMatrix} object.
 #' @rdname log-methods
 #' @export
 setMethod("log", c(x="vclMatrix"),
@@ -249,7 +283,7 @@ setMethod("log", c(x="vclMatrix"),
               if(is.null(base)){
                   gpuMatElemLog(x) 
               }else{
-                  assert_is_numeric(base)
+ #               assertive.types::assert_is_numeric(base)
                   gpuMatElemLogBase(x, base)
               }
               
@@ -258,7 +292,7 @@ setMethod("log", c(x="vclMatrix"),
 )
 
 
-
+#' @return An integer.
 #' @rdname nrow-gpuR
 #' @export
 setMethod('nrow', signature(x="vclMatrix"), 
@@ -276,6 +310,8 @@ setMethod('nrow', signature(x="vclMatrix"),
               return(result)
           }
 )
+
+
 
 #' @rdname nrow-gpuR
 #' @export
@@ -296,6 +332,7 @@ setMethod('ncol', signature(x="vclMatrix"),
 )
 
 
+
 #' @rdname dim-methods
 #' @aliases dim-vclMatrix
 #' @export
@@ -306,6 +343,10 @@ setMethod("dim", signature(x="vclMatrix"),
 )
 
 
+
+
+
+#' @return The total number of elements in the vclMatrix object `x`.
 #' @rdname length-methods
 #' @aliases length-vclMatrix
 #' @export
@@ -322,9 +363,10 @@ setMethod("length", signature(x="vclMatrix"),
 #' matrices using a GPU.  This is equivalent to t(x) %*% y (crossprod)
 #' or x %*% t(y) (tcrossprod) but faster as no data transfer between
 #' device and host is required.
-#' @param x A vclMatrix
-#' @param y A vclMatrix
-#' @return A vclMatrix
+#' @param x A \code{vclMatrix} object.
+#' @param y A \code{vclMatrix} object.
+#' @return A \code{vclMatrix} object of the transpose of the outer 
+#' product of the two objects \code{x} and \code{y}.
 #' @author Charles Determan Jr.
 #' @docType methods
 #' @rdname vclMatrix-crossprod
@@ -345,6 +387,9 @@ setMethod("crossprod",
               vcl_crossprod(x, y)
           })
 
+
+
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("crossprod",
@@ -354,6 +399,9 @@ setMethod("crossprod",
               vcl_crossprod(x, y)
           })
 
+
+
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("crossprod",
@@ -362,6 +410,7 @@ setMethod("crossprod",
               x <- vclMatrix(x, type = typeof(y), ctx_id = y@.context_index)
               vcl_crossprod(x, y)
           })
+
 
 #' @rdname vclMatrix-crossprod
 #' @export
@@ -397,6 +446,7 @@ setMethod("tcrossprod",
               vcl_tcrossprod(x, y)
           })
 
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("tcrossprod",
@@ -405,6 +455,8 @@ setMethod("tcrossprod",
               x <- vclMatrix(x, type = typeof(y), ctx_id = y@.context_index)
               vcl_tcrossprod(x, y)
           })
+
+
 
 #' @rdname vclMatrix-crossprod
 #' @export
@@ -415,6 +467,8 @@ setMethod("tcrossprod",
               vcl_tcrossprod(x, y)
           })
 
+
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("tcrossprod",
@@ -423,6 +477,8 @@ setMethod("tcrossprod",
               vcl_mat_vec_tcrossprod(x, y)
           })
 
+
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("tcrossprod",
@@ -430,6 +486,9 @@ setMethod("tcrossprod",
           function(x, y){
               vcl_mat_vec_tcrossprod(x, y)
           })
+
+
+
 
 #' @rdname cov-methods
 #' @export
@@ -442,6 +501,8 @@ setMethod("cov",
               return(vclMatrix_pmcc(x))
           })
 
+
+
 #' @rdname cov-methods
 #' @export
 setMethod("cov",
@@ -452,6 +513,8 @@ setMethod("cov",
               }
               return(vclMatrix_pmcc(x, y))
           })
+
+
 
 #' @rdname cov-methods
 #' @export
@@ -464,6 +527,10 @@ setMethod("cov",
               return(vclMatrix_pmcc(x))
           })
 
+
+
+
+
 #' @rdname cov-methods
 #' @export
 setMethod("cov",
@@ -475,10 +542,13 @@ setMethod("cov",
               return(vclMatrix_pmcc(x, y))
           })
 
-#' @title Row and Column Sums and Means of vclMatrix
+
+
+
+#' @title Row and Column Sums and Means of \code{vclMatrix}
 #' @description Row and column sums and of vclMatrix objects
-#' @param x A vclMatrix object
-#' @return A gpuVector object
+#' @param x A \code{vclMatrix} object
+#' @return A \code{vclVector} object
 #' @author Charles Determan Jr.
 #' @docType methods
 #' @rdname vclMatrix.colSums
@@ -490,6 +560,8 @@ setMethod("colSums",
           function(x){
               vclMatrix_colSums(x)
           })
+
+
 
 
 #' @rdname vclMatrix.colSums
@@ -518,6 +590,7 @@ setMethod("rowMeans",
           function(x){
               vclMatrix_rowMeans(x)
           })
+
 
 
 #' @rdname Summary-methods
@@ -549,7 +622,8 @@ setMethod("Summary", c(x="vclMatrix"),
 #' @param upper logical value indicating whether the upper triangle of the 
 #' distance matrix
 #' @param p The power of the Minkowski distance (not currently used)
-#' @return a gpuMatrix/vclMatrix containing the corresponding distances
+#' @return a \code{gpuMatrix}/\code{vclMatrix} containing the pairwise distances 
+#' between rows of `x` and `y`, based on the specified method.
 #' @rdname dist-vclMatrix
 #' @aliases dist,vclMatrix
 #' @export
@@ -586,6 +660,8 @@ setMethod("dist", signature(x="vclMatrix"),
              return(D)
           }
 )
+
+
 
 #' @rdname dist-vclMatrix
 #' @aliases distance,vclMatrix
@@ -637,6 +713,10 @@ setMethod("distance", signature(x = "vclMatrix", y = "vclMatrix"),
           }
 )
 
+
+
+
+#' @return A deep copy of the input \code{vclMatrix} object.
 #' @rdname gpuR-deepcopy
 setMethod("deepcopy", signature(object ="vclMatrix"),
           function(object, source = FALSE){
@@ -672,6 +752,10 @@ setMethod("deepcopy", signature(object ="vclMatrix"),
               return(out)
           })
 
+
+
+
+
 #' @rdname gpuR-block
 setMethod("block",
           signature(object = "vclMatrix", 
@@ -679,9 +763,9 @@ setMethod("block",
                     colStart = "integer", colEnd = "integer"),
           function(object, rowStart, rowEnd, colStart, colEnd){
               
-              assert_all_are_positive(c(rowStart, rowEnd, colStart, colEnd))
-              assert_all_are_in_range(c(rowStart, rowEnd), lower = 1, upper = nrow(object)+1)
-              assert_all_are_in_range(c(colStart, colEnd), lower = 1, upper = ncol(object)+1)
+             assert_all_are_positive(c(rowStart, rowEnd, colStart, colEnd))
+             assert_all_are_in_range(c(rowStart, rowEnd), lower = 1, upper = nrow(object)+1)
+             assert_all_are_in_range(c(colStart, colEnd), lower = 1, upper = ncol(object)+1)
               
               ptr <- switch(typeof(object),
                             "float" = {
@@ -711,6 +795,10 @@ setMethod("block",
               
           })
 
+
+
+
+#' @return A \code{vclMatrix} object.
 setMethod("cbind2",
           signature(x = "vclMatrix", y = "vclMatrix"),
           function(x, y, ...){
@@ -727,6 +815,11 @@ setMethod("cbind2",
               return(z)
           })
 
+
+
+
+
+#' @return A \code{vclMatrix} object.
 setMethod("cbind2",
           signature(x = "numeric", y = "vclMatrix"),
           function(x, y, ...){
@@ -739,6 +832,10 @@ setMethod("cbind2",
               return(z)
           })
 
+
+
+
+#' @return A \code{vclMatrix} object.
 setMethod("cbind2",
           signature(x = "vclMatrix", y = "numeric"),
           function(x, y, ...){
@@ -751,7 +848,7 @@ setMethod("cbind2",
               return(z)
           })
 
-
+#' @return A \code{vclMatrix} object.
 setMethod("cbind2",
           signature(x = "vclMatrix", y = "vclVector"),
           function(x, y, ...){
@@ -776,7 +873,7 @@ setMethod("cbind2",
               return(z)
           })
 
-
+#' @return A \code{vclMatrix} object.
 setMethod("cbind2",
           signature(x = "vclVector", y = "vclMatrix"),
           function(x, y, ...){
@@ -793,7 +890,7 @@ setMethod("cbind2",
               return(z)
           })
 
-
+#' @return A \code{vclMatrix} object.
 setMethod("rbind2",
           signature(x = "vclMatrix", y = "vclMatrix"),
           function(x, y, ...){
@@ -840,6 +937,9 @@ setMethod("rbind2",
               return(ptr)
           })
 
+
+
+#' @return A \code{vclMatrix} object.
 setMethod("rbind2",
           signature(x = "numeric", y = "vclMatrix"),
           function(x, y, ...){
@@ -882,6 +982,9 @@ setMethod("rbind2",
               return(ptr)
           })
 
+
+
+#' @return A \code{vclMatrix} object.
 setMethod("rbind2",
           signature(x = "vclMatrix", y = "numeric"),
           function(x, y, ...){
@@ -926,6 +1029,8 @@ setMethod("rbind2",
           })
 
 
+
+#' @return The transpose of the input \code{vclMatrix} object.
 #' @rdname t-methods
 #' @aliases t,vclMatrix
 #' @export
@@ -940,7 +1045,7 @@ setMethod("t", c(x = "vclMatrix"),
 #' @description Extract or replace the diagonal of a matrix
 #' @param x A gpuR matrix object
 #' @param value A vector object (gpuR)
-#' @return A gpuR vector object of the matrix diagonal of \code{x}.  The 
+#' @return A \code{gpuRvector} object of the matrix diagonal of \code{x}.  The 
 #' replacement form returns nothing as it replaces the diagonal of \code{x}.
 #' @note If an identity matrix is desired, please see \link{identity_matrix}.
 #' @author Charles Determan Jr.
@@ -954,6 +1059,9 @@ setMethod("diag", c(x = "vclMatrix"),
               return(vclMatrix_get_diag(x))
           }
 )
+
+
+
 
 #' @rdname diag-methods
 #' @aliases diag<-,vclMatrix,vclVector
@@ -987,7 +1095,7 @@ setMethod("diag<-", c(x = "vclMatrix", value = "vclVector"),
 #' @export
 identity_matrix <- function(x, type = NULL){
     
-    assert_is_a_number(x)
+#  assertive.types::assert_is_a_number(x)
     
     if(is.null(type)){
         type <- getOption("gpuR.default.type")
@@ -1008,7 +1116,7 @@ identity_matrix <- function(x, type = NULL){
 #' @title Calculate Determinant of a Matrix on GPU
 #' @description \code{det} calculates the determinant of a matrix.
 #' @param x A gpuR matrix object
-#' @return The determine of \code{x}
+#' @return The determinant of \code{x}
 #' @note This function uses an LU decomposition and the \code{det} 
 #' function is simply a wrapper returning the determinant product
 #' @author Charles Determan Jr.

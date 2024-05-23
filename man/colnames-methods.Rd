@@ -34,6 +34,9 @@ colnames(x, do.NULL, prefix)
 
 \item{value}{A character vector to assign as row/column names}
 }
+\value{
+A character vector of column names of the gpuMatrix object.
+}
 \description{
 Retrieve or set the row or column names of a gpuR matrix object
 }

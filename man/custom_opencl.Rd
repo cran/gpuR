@@ -15,6 +15,10 @@ Provided by \code{\link{setup_opencl}}}
 \item{type}{The precision on which the kernel is compiled.  Options include
 \code{"int"}, \code{"float"}, and \code{"double"}}
 }
+\value{
+This function does not return a value directly, but it compiles 
+the provided OpenCL \code{kernel} and performs necessary operations for using it.
+}
 \description{
 Compile a custom function using a user provided OpenCL kernel
 }

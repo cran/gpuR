@@ -26,6 +26,13 @@ the base with respect to which logarithms are computed.  Defaults to the
 natural log.}
 }
 \value{
+A gpuVector object with the element-wise natural 
+logarithm of the elements of the input gpuVector object \code{x}.
+
+A \code{vclMatrix} object.
+
+A vclVector object.
+
 A gpuR object of the same class as \code{x}
 }
 \description{

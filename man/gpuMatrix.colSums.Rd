@@ -4,6 +4,7 @@
 \name{colSums,gpuMatrix-method}
 \alias{colSums,gpuMatrix-method}
 \alias{colSums,gpuMatrix}
+\alias{rowSums,gpuMatrix}
 \alias{rowSums,gpuMatrix-method}
 \alias{colMeans,gpuMatrix-method}
 \alias{rowMeans,gpuMatrix-method}
@@ -21,7 +22,13 @@
 \item{x}{A gpuMatrix object}
 }
 \value{
-A gpuVector object
+A gpuvector containing the sum of each column in the gpuMatrix.
+
+A gpuvector containing the sum of each row in the gpuMatrix.
+
+A gpuvector containing the mean of each column in the gpuMatrix.
+
+A gpuvector containing the mean of each row in the gpuMatrix.
 }
 \description{
 Row and column sums and of gpuMatrix objects

@@ -27,6 +27,8 @@ setMethod("norm", signature(x = "vclMatrix", type = "character"),
     }
 )
 
+
+
 #' @rdname norm-methods
 #' @export
 setMethod("norm", signature(x = "vclMatrix", type = "missing"),

@@ -6,6 +6,9 @@
 \usage{
 has_multiple_gpu_skip()
 }
+\value{
+Returns nothing but gives a message if only one GPU is available.
+}
 \description{
 Function to skip testthat tests
 if less than 2 valid GPU's are detected

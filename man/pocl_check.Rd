@@ -6,6 +6,9 @@
 \usage{
 pocl_check()
 }
+\value{
+Returns nothing but gives a message if the POCL version is too old.
+}
 \description{
 Versions of POCL up to 0.15-pre have a bug
 which results in values being returned when NA values

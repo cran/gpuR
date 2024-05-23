@@ -62,7 +62,7 @@ setGeneric("as.gpuMatrix", function(object, type){
 #' 
 #' NOTE - this means that altering values in a vector slice object will alter
 #' values in the source vector.
-#' @return A \code{gpuVectorSlice} or \code{vclVectorSlice} object
+#' @return A \code{gpuVectorSlice} or \code{vclVectorSlice} object.
 #' @author Charles Determan Jr.
 #' @docType methods
 #' @name slice
@@ -88,7 +88,7 @@ setGeneric("slice", function(object, start, end){
 #' 
 #' NOTE - this means that altering values in a matrix block object will alter
 #' values in the source matrix.
-#' @return A \code{gpuMatrixBlock} or \code{vclMatrixBlock} object
+#' @return A block of the input \code{gpuMatrixBlock} or \code{vclMatrixBlock} object.
 #' @author Charles Determan Jr.
 #' @docType methods
 #' @name block

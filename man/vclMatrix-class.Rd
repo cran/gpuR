@@ -4,6 +4,9 @@
 \name{vclMatrix-class}
 \alias{vclMatrix-class}
 \title{vclMatrix Class}
+\value{
+An object of class 'vclMatrix' with the specified slots.
+}
 \description{
 This is the 'mother' class for all
 vclMatrix objects.  These objects are pointers

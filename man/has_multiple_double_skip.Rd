@@ -6,6 +6,9 @@
 \usage{
 has_multiple_double_skip()
 }
+\value{
+Returns nothing but gives a message if there are less than 2 GPUs with double precision.
+}
 \description{
 Function to skip testthat tests
 if their aren't multiple detected GPU with double precision

@@ -15,38 +15,7 @@
 \alias{\%*\%,gpuMatrix,gpuVector-method}
 \alias{\%*\%,gpuMatrix,matrix-method}
 \alias{\%*\%,matrix,gpuMatrix-method}
-\title{#' @rdname as.vclVector-methods
-#' @param shared Logical indicating if memory should be shared with \code{x}
-#' @aliases as.gpuVector,matrix
-#' @export
-as.vclVector.vclMatrix <- function(data, shared = FALSE, ...){
-    
-    ctx_id <- data@.context_index - 1
-    
-    switch(typeof(data),
-           "integer" = return(new("ivclVector", 
-                                  address=vclMatTovclVec(data@address, shared, ctx_id, 4L),
-                                  .context_index = data@.context_index,
-                                  .platform_index = data@.platform_index,
-                                  .platform = data@.platform,
-                                  .device_index = data@.device_index,
-                                  .device = data@.device)),
-           "float" = return(new("fvclVector", 
-                                address=vclMatTovclVec(data@address, shared, ctx_id, 6L),
-                                .context_index = data@.context_index,
-                                .platform_index = data@.platform_index,
-                                .platform = data@.platform,
-                                .device_index = data@.device_index,
-                                .device = data@.device)),
-           "double" = return(new("dvclVector", 
-                                 address=vclMatTovclVec(data@address, shared, ctx_id, 8L),
-                                 .context_index = data@.context_index,
-                                 .platform_index = data@.platform_index,
-                                 .platform = data@.platform,
-                                 .device_index = data@.device_index,
-                                 .device = data@.device))
-    )
-}}
+\title{Methods for gpu/vcl Vector}
 \usage{
 \S4method{\%*\%}{gpuVector,gpuVector}(x, y)
 
@@ -76,6 +45,23 @@ as.vclVector.vclMatrix <- function(data, shared = FALSE, ...){
 \item{x}{A gpuR object}
 
 \item{y}{A gpuR object}
+}
+\value{
+The inner product of the two \code{gpuVector} objects \code{x} and \code{y}.
+
+The result of matrix-vector multiplication between the \code{gpuMatrix} \code{y}
+and the \code{gpuVector} \code{x}.
+
+The result of multiplying the \code{vclMatrix} `x` and the \code{vclVector} `y`.
+
+A \code{vclMatrix} object, the result of multiplying 
+the \code{vclMatrix} `x` and the regular R matrix `y`.
+
+A \code{vclMatrix} object, the result of multiplying the regular 
+R matrix x and the \code{vclMatrix} y.
+
+A \code{gpuMatrix} object which is the result of multiplying 
+the two \code{gpuMatrix} objects `x` and `y`.
 }
 \description{
 Multiply two gpuR objects, if they are conformable.  If both

@@ -16,7 +16,7 @@
 #' \tabular{ll}{ Package: \tab gpuR\cr Type: \tab Package\cr 
 #' Version: \tab 1.0.0\cr Date: \tab 2015-03-31\cr License: \tab GPL-3\cr
 #' Copyright: \tab (c) 2015 Charles E. Determan Jr.\cr URL: \tab 
-#' \url{http://www.github.com/cdeterman/gpuR}\cr LazyLoad: \tab yes\cr
+#' \url{https://github.com/cdeterman/gpuR}\cr LazyLoad: \tab yes\cr
 #' }
 #' 
 #' 
@@ -32,7 +32,7 @@
 #' Charles Determan \email{cdetermanjr@@gmail.com}
 #' 
 #' Maintainer: Charles Determan \email{cdetermanjr@@gmail.com}
-#' @docType package
+#' @docType _PACKAGE
 #' @name gpuR-package
 #' @aliases gpuR-package gpuR
 NULL

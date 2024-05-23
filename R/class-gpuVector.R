@@ -21,6 +21,7 @@ setClassUnion("missingOrNULL", c("missing", "NULL"))
 #'      \item{\code{.device_index}:}{Integer index of active device}
 #'      \item{\code{.device}:}{Name of active device}
 #'  }
+#' @return An object of class 'gpuVector' with the specified slots.
 #' @name gpuVector-class
 #' @rdname gpuVector-class
 #' @author Charles Determan Jr.
@@ -54,6 +55,7 @@ setClass('gpuVector',
 #' @name igpuVector-class
 #' @rdname igpuVector-class
 #' @author Charles Determan Jr.
+#' @return If the gpuVector object is of type 'integer', returns TRUE, if not, returns an error message. 
 #' @seealso \code{\link{gpuVector-class}}
 #' @export
 setClass("igpuVector",
@@ -86,6 +88,7 @@ setClass("igpuVector",
 #' @name fgpuVector-class
 #' @rdname fgpuVector-class
 #' @author Charles Determan Jr.
+#' @return If the gpuVector object is of type 'float', returns TRUE, if not, returns an error message. 
 #' @seealso \code{\link{gpuVector-class}}
 #' @export
 setClass("fgpuVector",
@@ -108,6 +111,7 @@ setClass("fgpuVector",
 #' @name dgpuVector-class
 #' @rdname dgpuVector-class
 #' @author Charles Determan Jr.
+#' @return If the gpuVector object is of type 'double', returns TRUE, if not, returns an error message. 
 #' @seealso \code{\link{gpuVector-class}}
 #' @export
 setClass("dgpuVector",

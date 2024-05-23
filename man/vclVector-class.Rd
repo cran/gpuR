@@ -4,6 +4,9 @@
 \name{vclVector-class}
 \alias{vclVector-class}
 \title{vclVector Class}
+\value{
+An object of class 'vclVector' with the specified slots.
+}
 \description{
 This is the 'mother' class for all
 vclVector objects.  All other vclVector classes

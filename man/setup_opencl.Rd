@@ -19,6 +19,17 @@ where each element reflects a kernel function defined in an OpenCL kernel file.}
 corresponds to the gpuR objects passed and contains a character vector of
 which kernels the object will be enqueued.}
 }
+\value{
+A \code{data.frame} with columns:
+\describe{
+ \item{\code{object}:}{The name of the gpuR object.}
+ \item{\code{intents}:}{The intent of the object, specified as 'IN', 'OUT', or 'INOUT'.}
+ \item{\code{queues}:}{A character vector reflecting equal length to \code{objects}, 
+ where each element reflects a kernel function defined in an OpenCL kernel file.}
+ \item{\code{map}:}{The corresponding arguments names in the provided OpenCL kernel 
+ corresponding to the gpuR objects passed.}
+}
+}
 \description{
 Generates a \code{data.frame} of argument definitions
 for use in \code{\link{custom_opencl}}

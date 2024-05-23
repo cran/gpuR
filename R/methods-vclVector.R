@@ -1,19 +1,10 @@
 
-#' @export
-as.vector.vclVector <- function(x, mode = "any"){
-    out <- x[]
-    return(out)
-}
 
-#' #' @rdname as.vclVector-methods
-#' #' @param shared Logical indicating if memory should be shared with \code{x}
-#' #' @export
-#' as.vclVector <- function (data, shared, ...) {
-#'     UseMethod("as.vclVector", data)
-#' }
-
+#' @title vclVector Methods
+#' @description stuff
+#' @param shared Logical indicating if memory should be shared with x
+#' @return A vclVector object.
 #' @rdname as.vclVector-methods
-#' @aliases as.vclVector,vector
 setMethod('as.vclVector', 
           signature(object = 'vector'),
           function(object, type=NULL){
@@ -25,8 +16,16 @@ setMethod('as.vclVector',
           },
           valueClass = "vclVector")
 
+
+#' @return A standard R vector
+#' @export
+as.vector.vclVector <- function(x, mode = "any"){
+  out <- x[]
+  return(out)
+}
+
+
 #' @rdname as.vclVector-methods
-#' @param shared Logical indicating if memory should be shared with \code{x}
 #' @aliases as.vclVector,vclMatrix
 setMethod('as.vclVector', 
           signature(object = 'vclMatrix'),
@@ -49,14 +48,14 @@ setMethod('as.vclVector',
                                             .device_index = object@.device_index,
                                             .device = object@.device)),
                      "float" = {
-                         print('creating vector')
-                         return(new("fvclVector", 
+                        result =  new("fvclVector", 
                                           address=vclMatTovclVec(object@address, shared, ctx_id, 6L),
                                           .context_index = object@.context_index,
                                           .platform_index = object@.platform_index,
                                           .platform = object@.platform,
                                           .device_index = object@.device_index,
-                                          .device = object@.device))
+                                          .device = object@.device)
+                         return(result)
                          },
                      "double" = return(new("dvclVector", 
                                            address=vclMatTovclVec(object@address, shared, ctx_id, 8L),
@@ -70,38 +69,7 @@ setMethod('as.vclVector',
           },
           valueClass = "vclVector")
 
-#' #' @rdname as.vclVector-methods
-#' #' @param shared Logical indicating if memory should be shared with \code{x}
-#' #' @aliases as.gpuVector,matrix
-#' #' @export
-#' as.vclVector.vclMatrix <- function(data, shared = FALSE, ...){
-#'     
-#'     ctx_id <- data@.context_index - 1
-#'     
-#'     switch(typeof(data),
-#'            "integer" = return(new("ivclVector", 
-#'                                   address=vclMatTovclVec(data@address, shared, ctx_id, 4L),
-#'                                   .context_index = data@.context_index,
-#'                                   .platform_index = data@.platform_index,
-#'                                   .platform = data@.platform,
-#'                                   .device_index = data@.device_index,
-#'                                   .device = data@.device)),
-#'            "float" = return(new("fvclVector", 
-#'                                 address=vclMatTovclVec(data@address, shared, ctx_id, 6L),
-#'                                 .context_index = data@.context_index,
-#'                                 .platform_index = data@.platform_index,
-#'                                 .platform = data@.platform,
-#'                                 .device_index = data@.device_index,
-#'                                 .device = data@.device)),
-#'            "double" = return(new("dvclVector", 
-#'                                  address=vclMatTovclVec(data@address, shared, ctx_id, 8L),
-#'                                  .context_index = data@.context_index,
-#'                                  .platform_index = data@.platform_index,
-#'                                  .platform = data@.platform,
-#'                                  .device_index = data@.device_index,
-#'                                  .device = data@.device))
-#'     )
-#' }
+
 
 
 #' @rdname grapes-times-grapes-methods
@@ -116,6 +84,9 @@ setMethod("%*%", signature(x="vclVector", y = "vclVector"),
           },
           valueClass = "vclVector"
 )
+
+
+
 
 #' @rdname grapes-times-grapes-methods
 #' @export
@@ -132,6 +103,8 @@ setMethod("%*%", signature(x="vclVector", y = "vclMatrix"),
           valueClass = "vclVector"
 )
 
+
+
 #' @rdname grapes-o-grapes-methods
 #' @export
 setMethod("%o%", signature(X="vclVector", Y = "vclVector"),
@@ -142,6 +115,8 @@ setMethod("%o%", signature(X="vclVector", Y = "vclVector"),
           valueClass = "vclMatrix"
 )
 
+
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("tcrossprod",
@@ -151,6 +126,7 @@ setMethod("tcrossprod",
           },
           valueClass = "vclMatrix")
 
+
 #' @rdname vclMatrix-crossprod
 #' @export
 setMethod("tcrossprod",
@@ -159,6 +135,8 @@ setMethod("tcrossprod",
               return(gpuVecOuterProd(x, x))
           },
           valueClass = "vclMatrix")
+
+
 
 #' @rdname Arith-methods
 #' @export
@@ -182,12 +160,14 @@ setMethod("Arith", c(e1="vclVector", e2="vclVector"),
           valueClass = "vclVector"
 )
 
+
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="numeric", e2="vclVector"),
           function(e1, e2)
           {
-              assert_is_of_length(e1, 1)
+   #         assertive.properties::assert_is_of_length(e1, 1)
               
               op = .Generic[[1]]
               switch(op,
@@ -214,12 +194,13 @@ setMethod("Arith", c(e1="numeric", e2="vclVector"),
           valueClass = "vclVector"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="vclVector", e2="numeric"),
           function(e1, e2)
           {
-              assert_is_of_length(e2, 1)
+#            assertive.properties::assert_is_of_length(e2, 1)
               
               op = .Generic[[1]]
               switch(op,
@@ -240,6 +221,7 @@ setMethod("Arith", c(e1="vclVector", e2="numeric"),
           valueClass = "vclVector"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="vclVector", e2="missing"),
@@ -253,6 +235,7 @@ setMethod("Arith", c(e1="vclVector", e2="missing"),
           },
           valueClass = "vclVector"
 )
+
 
 #' @rdname Arith-methods
 #' @export
@@ -270,6 +253,8 @@ setMethod("Arith", c(e1="vclVector", e2="vclMatrix"),
           valueClass = "vclMatrix"
 )
 
+
+#' @return A vclVector object.
 #' @rdname Math-methods
 #' @export
 setMethod("Math", c(x="vclVector"),
@@ -297,6 +282,7 @@ setMethod("Math", c(x="vclVector"),
           valueClass = "vclVector"
 )
 
+#' @return A vclVector object.
 #' @rdname log-methods
 #' @export
 setMethod("log", c(x="vclVector"),
@@ -305,13 +291,15 @@ setMethod("log", c(x="vclVector"),
               if(is.null(base)){
                   gpuVecElemLog(x) 
               }else{
-                  assert_is_numeric(base)
+#                assertive.types::assert_is_numeric(base)
                   gpuVecElemLogBase(x, base)
               }
               
           },
           valueClass = "vclVector"
 )
+
+
 
 #' @rdname Summary-methods
 #' @export
@@ -328,7 +316,7 @@ setMethod("Summary", c(x="vclVector"),
           }
 )
 
-
+#' @return The length of the vclVector based on its data type.
 #' @rdname length-methods
 #' @export
 setMethod('length', signature(x = "vclVector"),
@@ -342,6 +330,8 @@ setMethod('length', signature(x = "vclVector"),
           }
 )
 
+
+#' @return A deep copy of the input \code{vclVector} object.
 #' @rdname gpuR-deepcopy
 setMethod("deepcopy", signature(object ="vclVector"),
           function(object){
@@ -381,13 +371,17 @@ setMethod("deepcopy", signature(object ="vclVector"),
               return(out)
           })
 
+
+
+
+
 #' @rdname gpuR-slice
 setMethod("slice",
           signature(object = "vclVector", start = "integer", end = "integer"),
           function(object, start, end){
               
-              assert_all_are_positive(c(start, end))
-              assert_all_are_in_range(c(start, end), lower = 1, upper = length(object)+1)
+            assert_all_are_positive(c(start, end))
+            assert_all_are_in_range(c(start, end), lower = 1, upper = length(object)+1)
               
               ptr <- switch(typeof(object),
                             "float" = {

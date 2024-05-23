@@ -6,6 +6,9 @@
 \usage{
 synchronize()
 }
+\value{
+This does not return anything.
+}
 \description{
 This pauses execution until the processing is complete
 on the device (CPU/GPU/etc.).  This is important especially for
@@ -14,8 +17,8 @@ benchmarking applications.
 \examples{
 \dontrun{
     mat <- vclMatrix(rnorm(500^2), ncol = 500, nrow = 500)
-    system.time(mat \%*\% mat)
-    system.time(mat \%*\% mat; synchronize())
+    system.time({mat \%*\% mat})
+    system.time({mat \%*\% mat; synchronize()})
 }
 }
 \author{

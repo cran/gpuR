@@ -14,6 +14,8 @@ as.matrix.gpuMatrix <- function(x, ...){
 #' are vectors of the same length, it will return the inner product (as a matrix).
 #' @param x A gpuR object
 #' @param y A gpuR object
+#' @return A \code{gpuMatrix} object which is the result of multiplying 
+#' the two \code{gpuMatrix} objects `x` and `y`.
 #' @docType methods
 #' @rdname grapes-times-grapes-methods
 #' @author Charles Determan Jr.
@@ -29,6 +31,7 @@ setMethod("%*%", signature(x="gpuMatrix", y = "gpuMatrix"),
           valueClass = "gpuMatrix"
 )
 
+
 #' @rdname grapes-times-grapes-methods
 #' @export
 setMethod("%*%", signature(x="gpuMatrix", y = "gpuVector"),
@@ -41,6 +44,8 @@ setMethod("%*%", signature(x="gpuMatrix", y = "gpuVector"),
           },
           valueClass = "gpuVector"
 )
+
+
 
 #' @rdname grapes-times-grapes-methods
 #' @export
@@ -55,6 +60,8 @@ setMethod("%*%", signature(x="gpuMatrix", y = "matrix"),
           },
           valueClass = "gpuMatrix"
 )
+
+
 
 #' @rdname grapes-times-grapes-methods
 #' @export
@@ -97,6 +104,7 @@ setMethod("Arith", c(e1="gpuMatrix", e2="gpuMatrix"),
           valueClass = "gpuMatrix"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="gpuMatrix", e2="matrix"),
@@ -119,6 +127,7 @@ setMethod("Arith", c(e1="gpuMatrix", e2="matrix"),
           valueClass = "gpuMatrix"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="matrix", e2="gpuMatrix"),
@@ -140,12 +149,13 @@ setMethod("Arith", c(e1="matrix", e2="gpuMatrix"),
           valueClass = "gpuMatrix"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="gpuMatrix", e2="numeric"),
           function(e1, e2)
           {
-              assert_is_of_length(e2, 1)
+#              assertive.properties::assert_is_of_length(e2, 1)
               
               op = .Generic[[1]]
               switch(op,
@@ -166,12 +176,13 @@ setMethod("Arith", c(e1="gpuMatrix", e2="numeric"),
           valueClass = "gpuMatrix"
 )
 
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="numeric", e2="gpuMatrix"),
           function(e1, e2)
           {
-              assert_is_of_length(e1, 1)
+  #          assertive.properties::assert_is_of_length(e1, 1)
               
               op = .Generic[[1]]
               switch(op,
@@ -198,6 +209,8 @@ setMethod("Arith", c(e1="numeric", e2="gpuMatrix"),
           valueClass = "gpuMatrix"
 )
 
+
+
 #' @rdname Arith-methods
 #' @export
 setMethod("Arith", c(e1="gpuMatrix", e2="missing"),
@@ -211,6 +224,7 @@ setMethod("Arith", c(e1="gpuMatrix", e2="missing"),
           },
           valueClass = "gpuMatrix"
 )
+
 
 #' @rdname Arith-methods
 #' @export
@@ -232,7 +246,7 @@ setMethod("Arith", c(e1="gpuMatrix", e2="gpuVector"),
 #' @title gpuR Math methods
 #' @description Methods for the base Math methods \link[methods]{S4groupGeneric}
 #' @param x A gpuR object
-#' @return A gpuR object
+#' @return A gpuMatrix object.
 #' @details Currently implemented methods include:
 #' \itemize{
 #'  \item{"sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh",
@@ -289,7 +303,7 @@ setMethod("log", c(x="gpuMatrix"),
               if(is.null(base)){
                   gpuMatElemLog(x)
               }else{
-                  assert_is_numeric(base)
+#                assertive.types::assert_is_numeric(base)
                   gpuMatElemLogBase(x, base)
               }
               
@@ -337,7 +351,8 @@ setMethod('ncol', signature(x="gpuMatrix"),
 #' @title gpuMatrix/vclMatrix dim method
 #' @description Retrieve dimension of object
 #' @param x A gpuMatrix/vclMatrix object
-#' @return A length 2 vector of the number of rows and columns respectively.
+#' @return A numeric vector of length 2: the number of 
+#' rows and columns in the gpuR object `x`.
 #' @docType methods
 #' @rdname dim-methods
 #' @author Charles Determan Jr.
@@ -362,7 +377,7 @@ setMethod('length', signature(x="gpuMatrix"),
 #' @title Row and Column Sums and Means of gpuMatrix
 #' @description Row and column sums and of gpuMatrix objects
 #' @param x A gpuMatrix object
-#' @return A gpuVector object
+#' @return A gpuvector containing the sum of each column in the gpuMatrix.
 #' @author Charles Determan Jr.
 #' @docType methods
 #' @rdname gpuMatrix.colSums
@@ -375,8 +390,8 @@ setMethod("colSums",
               gpu_colSums(x)
           })
 
-
 #' @rdname gpuMatrix.colSums
+#' @return A gpuvector containing the sum of each row in the gpuMatrix.
 #' @export
 setMethod("rowSums",
           signature(x = "gpuMatrix"),
@@ -387,6 +402,7 @@ setMethod("rowSums",
 
 
 #' @rdname gpuMatrix.colSums
+#' @return A gpuvector containing the mean of each column in the gpuMatrix.
 #' @export
 setMethod("colMeans",
           signature(x = "gpuMatrix"),
@@ -396,6 +412,7 @@ setMethod("colMeans",
 
 
 #' @rdname gpuMatrix.colSums
+#' @return A gpuvector containing the mean of each row in the gpuMatrix.
 #' @export
 setMethod("rowMeans",
           signature(x = "gpuMatrix"),
@@ -424,6 +441,7 @@ setMethod("cov",
               return(gpu_pmcc(x))
           })
 
+
 #' @rdname cov-methods
 #' @export
 setMethod("cov",
@@ -434,6 +452,9 @@ setMethod("cov",
               }
               return(gpu_pmcc(x, y))
           })
+
+
+
 
 #' @rdname cov-methods
 #' @export
@@ -478,6 +499,7 @@ setMethod("crossprod",
           })
 
 
+
 #' @rdname gpuMatrix-crossprod
 #' @export
 setMethod("crossprod",
@@ -485,6 +507,8 @@ setMethod("crossprod",
           function(x, y){
               gpu_crossprod(x, y)
           })
+
+
 
 #' @rdname gpuMatrix-crossprod
 #' @export
@@ -495,6 +519,8 @@ setMethod("crossprod",
               gpu_crossprod(x, y)
           })
 
+
+
 #' @rdname gpuMatrix-crossprod
 #' @export
 setMethod("crossprod",
@@ -503,6 +529,7 @@ setMethod("crossprod",
               x <- gpuMatrix(x, type = typeof(y), ctx_id = y@.context_index)
               gpu_crossprod(x, y)
           })
+
 
 
 #' @rdname gpuMatrix-crossprod
@@ -530,6 +557,8 @@ setMethod("tcrossprod",
               gpu_tcrossprod(x, y)
           })
 
+
+
 #' @rdname gpuMatrix-crossprod
 #' @export
 setMethod("tcrossprod",
@@ -538,6 +567,8 @@ setMethod("tcrossprod",
               y <- gpuMatrix(y, type = typeof(x), ctx_id = x@.context_index)
               gpu_tcrossprod(x, y)
           })
+
+
 
 
 #' @rdname dist-vclMatrix
@@ -576,6 +607,9 @@ setMethod("dist", signature(x="gpuMatrix"),
               return(D)
           }
 )
+
+
+
 
 #' @rdname dist-vclMatrix
 #' @aliases distance,gpuMatrix
@@ -626,6 +660,8 @@ setMethod("distance", signature(x = "gpuMatrix", y = "gpuMatrix"),
 )
 
 
+
+#' @return A deep copy of the input \code{gpuMatrix} object.
 #' @rdname gpuR-deepcopy
 setMethod("deepcopy", signature(object ="gpuMatrix"),
           function(object){
@@ -658,6 +694,8 @@ setMethod("deepcopy", signature(object ="gpuMatrix"),
               
           })
 
+
+
 #' @rdname gpuR-block
 setMethod("block",
           signature(object = "gpuMatrix",
@@ -665,9 +703,9 @@ setMethod("block",
                     colStart = "integer", colEnd = "integer"),
           function(object, rowStart, rowEnd, colStart, colEnd){
               
-              assert_all_are_positive(c(rowStart, rowEnd, colStart, colEnd))
-              assert_all_are_in_range(c(rowStart, rowEnd), lower = 1, upper = nrow(object)+1)
-              assert_all_are_in_range(c(colStart, colEnd), lower = 1, upper = ncol(object)+1)
+            assert_all_are_positive(c(rowStart, rowEnd, colStart, colEnd))
+            assert_all_are_in_range(c(rowStart, rowEnd), lower = 1, upper = nrow(object)+1)
+            assert_all_are_in_range(c(colStart, colEnd), lower = 1, upper = ncol(object)+1)
               
               ptr <- switch(typeof(object),
                             "float" = {
@@ -697,7 +735,7 @@ setMethod("block",
               
           })
 
-
+#' @return A gpuMatrix object.
 setMethod("cbind2",
           signature(x = "gpuMatrix", y = "gpuMatrix"),
           function(x, y, ...){
@@ -742,6 +780,9 @@ setMethod("cbind2",
               return(ptr)
           })
 
+
+
+#' @return A gpuMatrix object.
 setMethod("cbind2",
           signature(x = "numeric", y = "gpuMatrix"),
           function(x, y, ...){
@@ -785,6 +826,9 @@ setMethod("cbind2",
               return(ptr)
           })
 
+
+
+#' @return A gpuMatrix object.
 setMethod("cbind2",
           signature(x = "gpuMatrix", y = "numeric"),
           function(x, y, ...){
@@ -828,6 +872,9 @@ setMethod("cbind2",
               return(ptr)
           })
 
+
+
+#' @return A gpuMatrix object.
 setMethod("rbind2",
           signature(x = "gpuMatrix", y = "gpuMatrix"),
           function(x, y, ...){
@@ -872,6 +919,9 @@ setMethod("rbind2",
               return(ptr)
           })
 
+
+
+#' @return A gpuMatrix object.
 setMethod("rbind2",
           signature(x = "numeric", y = "gpuMatrix"),
           function(x, y, ...){
@@ -915,6 +965,8 @@ setMethod("rbind2",
               return(ptr)
           })
 
+
+#' @return A gpuMatrix object.
 setMethod("rbind2",
           signature(x = "gpuMatrix", y = "numeric"),
           function(x, y, ...){

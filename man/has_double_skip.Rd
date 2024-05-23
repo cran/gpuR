@@ -6,6 +6,9 @@
 \usage{
 has_double_skip()
 }
+\value{
+Returns nothing but gives a message if GPU doesn't support double precision.
+}
 \description{
 Function to skip testthat tests
 if the detected GPU doesn't support double precision

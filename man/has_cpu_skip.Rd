@@ -6,6 +6,9 @@
 \usage{
 has_cpu_skip()
 }
+\value{
+Returns nothing but gives a message if no CPU is available.
+}
 \description{
 Function to skip testthat tests
 if no valid CPU's are detected

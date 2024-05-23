@@ -6,6 +6,9 @@
 \usage{
 has_gpu_skip()
 }
+\value{
+Returns nothing but gives a message if no GPUs available.
+}
 \description{
 Function to skip testthat tests
 if no valid GPU's are detected

@@ -16,7 +16,8 @@
 \item{x}{A gpuMatrix/vclMatrix object}
 }
 \value{
-A length 2 vector of the number of rows and columns respectively.
+A numeric vector of length 2: the number of 
+rows and columns in the gpuR object `x`.
 }
 \description{
 Retrieve dimension of object

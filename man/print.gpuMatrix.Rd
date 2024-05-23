@@ -15,6 +15,10 @@
 
 \item{width}{Number of columns to display}
 }
+\value{
+This function prints a truncated summary of a gpuMatrix object `x`
+to fit the screen
+}
 \description{
 prints a gpuMatrix object that is truncated to fit the screen
 }

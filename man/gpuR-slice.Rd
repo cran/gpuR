@@ -22,7 +22,7 @@ slice(object, start, end)
 \item{end}{An integer indicating the end of slice}
 }
 \value{
-A \code{gpuVectorSlice} or \code{vclVectorSlice} object
+A \code{gpuVectorSlice} or \code{vclVectorSlice} object.
 }
 \description{
 This doesn't create a copy, it provides a child class that

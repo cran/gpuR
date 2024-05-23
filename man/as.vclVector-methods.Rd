@@ -4,7 +4,6 @@
 \name{as.vclVector}
 \alias{as.vclVector}
 \alias{as.vclVector,vector-method}
-\alias{as.vclVector,vector}
 \alias{as.vclVector,vclMatrix-method}
 \alias{as.vclVector,vclMatrix}
 \title{Convert object to a vclVector}
@@ -24,14 +23,18 @@ is NULL where type is inherited from the source data type.}
 
 \item{...}{Additional arguments to as.vclVector methods}
 
-\item{shared}{Logical indicating if memory should be shared with \code{x}}
+\item{shared}{Logical indicating if memory should be shared with x}
 }
 \value{
 A vclVector object
+
+A vclVector object.
 }
 \description{
 Construct a vclVector of a class that inherits
 from \code{vclVector}
+
+stuff
 }
 \author{
 Charles Determan Jr.

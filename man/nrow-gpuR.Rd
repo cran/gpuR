@@ -20,6 +20,8 @@
 \item{x}{A gpuMatrix/vclMatrix object}
 }
 \value{
+An integer.
+
 An integer of length 1
 }
 \description{

@@ -55,12 +55,13 @@
 \S4method{tcrossprod}{vclVector,missing}(x, y)
 }
 \arguments{
-\item{x}{A vclMatrix}
+\item{x}{A \code{vclMatrix} object.}
 
-\item{y}{A vclMatrix}
+\item{y}{A \code{vclMatrix} object.}
 }
 \value{
-A vclMatrix
+A \code{vclMatrix} object of the transpose of the outer 
+product of the two objects \code{x} and \code{y}.
 }
 \description{
 Return the matrix cross-product of two conformable
